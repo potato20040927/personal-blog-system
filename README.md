@@ -12,8 +12,6 @@ The main objectives include:
 - Handling issues related to storing and displaying HTML content
 - Applying data structures and programming logic in a real-world application
 
----
-
 ### Expected Features
 This system is designed to support basic blog functionalities, including post management, content display, and preview mechanisms. Users will be able to:
 
@@ -29,8 +27,6 @@ Additional features may include:
 - Categorization using tags
 - Sorting posts based on time or other criteria
 
----
-
 ### Technologies
 The project will use a combination of frontend, backend, and data storage technologies:
 
@@ -40,8 +36,6 @@ The project will use a combination of frontend, backend, and data storage techno
 - **Tools:** Git for version control, Visual Studio Code as the development environment
 
 These technologies are chosen to provide a simple, modular, and maintainable architecture, allowing easy implementation of features such as content preview and post management.
-
----
 
 ### Timeline
 The project development will follow a logical sequence of implementing core features first, followed by additional enhancements and testing:
@@ -65,8 +59,6 @@ The project development will follow a logical sequence of implementing core feat
 5. **Testing and Documentation**
    - Test functionality and fix bugs
    - Prepare project documentation and final report
-
----
 
 ### Relation to the Course
 The project allows for independent exploration while applying concepts from **Data Structures** and **Advanced Programming** in a practical scenario.
