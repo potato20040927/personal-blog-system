@@ -19,7 +19,7 @@ This system is designed to support basic blog functionalities, including post ma
 - Browse a list of posts on the homepage (card-based layout)
 - View detailed content on separate pages
 
-A key feature of this system is the **content preview mechanism**, which displays a portion of each post. Special attention will be given to handling issues caused by truncating HTML content, ensuring previews remain readable and correctly formatted.
+A key feature of this system is the content preview mechanism, which displays a portion of each post. Special attention will be given to handling issues caused by truncating HTML content, ensuring previews remain readable and correctly formatted.
 
 Additional features may include:
 
@@ -38,38 +38,22 @@ The project will use a combination of frontend, backend, and data storage techno
 These technologies are chosen to provide a simple, modular, and maintainable architecture, allowing easy implementation of features such as content preview and post management.
 
 ### Timeline
-The project development will follow a logical sequence of implementing core features first, followed by additional enhancements and testing:
+The development of this project will follow a logical sequence, starting with the core system setup and gradually progressing to additional features and testing. Initially, I will analyze the project requirements and design the overall system architecture, then set up the frontend and backend structures to establish a solid foundation.
 
-1. **System Design and Setup**
-   - Analyze requirements and design the overall system architecture
-   - Set up frontend and backend structure
+Once the system is prepared, the core functionalities will be implemented, including the creation, editing, and deletion of posts, as well as displaying posts on the homepage and detailed view pages. After that, I will focus on the content preview mechanism, ensuring that partial content is displayed correctly and that any issues caused by truncating HTML content are properly handled.
 
-2. **Core Feature Implementation**
-   - Implement post creation, editing, and deletion
-   - Implement post display on the homepage and detailed view
+Following the core implementation, additional features such as keyword search, categorization, and post sorting will be added. At the same time, the user interface and system performance will be refined to provide a smooth and intuitive experience.
 
-3. **Content Preview and HTML Handling**
-   - Design and implement a content preview mechanism
-   - Handle issues caused by truncating HTML content
-
-4. **Additional Features and Improvements**
-   - Add search, categorization, and sorting
-   - Refine user interface and system performance
-
-5. **Testing and Documentation**
-   - Test functionality and fix bugs
-   - Prepare project documentation and final report
+Finally, the project will undergo thorough testing and debugging, and the documentation will be prepared to complete the project report.
 
 ### Relation to the Course
-The project allows for independent exploration while applying concepts from **Data Structures** and **Advanced Programming** in a practical scenario.
+The project allows for independent exploration while applying concepts from Data Structures and Advanced Programming in a practical scenario.
 
 Key connections include:
 
 - **Data Organization:** Using arrays and objects to manage posts, and mapping post IDs for quick access
 - **Algorithms and Processing:** Implementing search, sorting, and string manipulation for content previews
 - **Problem Solving & System Design:** Addressing challenges such as handling HTML content, managing data flow between frontend and backend, and designing a modular, maintainable structure
-
-Through this project, I aim to strengthen my understanding of how course concepts are applied in real-world software development and improve my ability to analyze and solve practical programming problems.
 
 ---
 
