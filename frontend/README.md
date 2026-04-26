@@ -1,4 +1,4 @@
-# Personal Blog CMS (React + TypeScript + Vite)
+# Personal Blog System (Front-end) (React + TypeScript + Vite)
 
 這是一個使用 React + TypeScript + Vite 開發的個人部落格系統，支援文章新增、編輯、刪除與分類功能，並具備基本後台管理能力。
 
@@ -44,7 +44,7 @@ src/
 
 ---
 
-## 專案執行
+## 專案執行(前端)
 
 ### 1. Clone Repository
 
