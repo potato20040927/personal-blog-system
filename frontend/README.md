@@ -40,9 +40,11 @@ src/
 ├── context/          # AuthContext
 ├── App.tsx
 └── main.tsx
+```
 
+---
 
-## Getting Started
+## 專案執行
 
 ### 1. Clone Repository
 
