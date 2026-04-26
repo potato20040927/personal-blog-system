@@ -1,4 +1,4 @@
-# Blog CMS Backend API
+# Personal Blog System (Back-end) (API)
 
 這是一個使用 **Node.js + Express + SQLite** 建立的簡易部落格後端 API，提供文章管理、使用者登入與圖片刪除功能。
 
