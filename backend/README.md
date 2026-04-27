@@ -13,7 +13,7 @@ This is a simple blog backend API built with **Node.js + Express + SQLite**, pro
 - Admin permission control
 - RESTful API design
 - CORS enabled for frontend integration
-- 
+
 ---
 
 ## Tech Stack
