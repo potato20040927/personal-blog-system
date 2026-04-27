@@ -1,23 +1,23 @@
 # Personal Blog System (Front-end) (React + TypeScript + Vite)
 
-這是一個使用 React + TypeScript + Vite 開發的個人部落格系統，支援文章新增、編輯、刪除與分類功能，並具備基本後台管理能力。
+This is a personal blog system built with **React + TypeScript + Vite**, supporting article creation, editing, deletion, and categorization, along with basic admin management features.
 
 ---
 
-## 專案特色
+## Features
 
-- 文章列表與分類瀏覽
-- 文章詳細頁（閱讀優化版面）
-- 富文字編輯器（ReactQuill）
-- 圖片上傳（Cloudinary）
-- Admin 權限控制（新增 / 編輯 / 刪除）
-- Context API 全域狀態管理
-- 基本 UI 排版優化（置中閱讀版面）
-- 使用 Vitest 進行單元測試
+- Article list with category filtering
+- Article detail page with optimized reading layout
+- Rich text editor (ReactQuill)
+- Image upload via Cloudinary
+- Admin authorization (create / edit / delete posts)
+- Global state management using Context API
+- Clean and centered reading UI layout
+- Unit testing with Vitest
 
 ---
 
-## 技術架構
+## Tech Stack
 
 - React 18
 - TypeScript
@@ -25,18 +25,18 @@
 - React Router DOM
 - Context API
 - ReactQuill
-- Cloudinary (圖片上傳)
+- Cloudinary (image upload service)
 - Vitest + Testing Library
 
 ---
 
-## 專案結構
+## Project Structure
 
 ```bash
 src/
-├── api/              # API 請求
-├── components/       # 可重用元件（Header, PostCard, Layout）
-├── pages/            # 頁面（PostList, PostDetail, NewPostPage）
+├── api/              # API requests
+├── components/       # Reusable components (Header, PostCard, Layout)
+├── pages/            # Pages (PostList, PostDetail, NewPostPage)
 ├── context/          # AuthContext
 ├── App.tsx
 └── main.tsx
@@ -44,7 +44,7 @@ src/
 
 ---
 
-## 專案執行(前端)
+## Frontend Setup
 
 ### 1. Clone Repository
 
