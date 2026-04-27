@@ -44,7 +44,7 @@ backend/
 
 ```bash
 git clone https://github.com/potato20040927/personal-blog-system.git
-cd backend
+cd src/backend
 ```
 
 ### 2. Install Dependencies
