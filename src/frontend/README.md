@@ -50,7 +50,7 @@ src/
 
 ```bash
 git clone https://github.com/potato20040927/personal-blog-system.git
-cd frontend
+cd src/frontend
 ```
 
 ### 2. Install Dependencies
