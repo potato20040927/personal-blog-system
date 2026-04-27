@@ -21,7 +21,7 @@
 - Node.js
 - Express
 - SQLite3
-- Cloudinary
+- Cloudinary (https://cloudinary.com/)
 - dotenv
 - body-parser
 - cors
@@ -52,7 +52,13 @@ cd backend
 npm install
 ```
 
-### 3. Create .env file
+### 3. Environment Variables Setup
+Before starting the server, you need to create a `.env` file in the backend root directory and configure your Cloudinary credentials.
+
+You can obtain these credentials from your Cloudinary dashboard.
+
+Create a `.env` file and add the following:
+
 ```bash
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
