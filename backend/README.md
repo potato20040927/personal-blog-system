@@ -1,19 +1,19 @@
 # Personal Blog System (Back-end) (API)
 
-這是一個使用 **Node.js + Express + SQLite** 建立的簡易部落格後端 API，提供文章管理、使用者登入與圖片刪除功能。
+This is a simple blog backend API built with **Node.js + Express + SQLite**, providing article management, user authentication, and image deletion functionality.
 
 ---
 
 ##  Features
 
-- 文章 CRUD API（新增 / 讀取 / 修改 / 刪除）
-- 簡易登入系統（mock users）
-- SQLite 本地資料庫
-- Cloudinary 圖片管理（刪文時同步刪圖）
-- admin 權限控制
-- RESTful API 設計
-- CORS 支援前端串接
-
+- Article CRUD API (Create / Read / Update / Delete)
+- Simple authentication system (mock users)
+- SQLite local database
+- Cloudinary image management (auto-delete images when posts are deleted)
+- Admin permission control
+- RESTful API design
+- CORS enabled for frontend integration
+- 
 ---
 
 ## Tech Stack
@@ -32,13 +32,13 @@
 
 ```bash
 backend/
-├── server.js      # 主伺服器
-├── db.sqlite      # SQLite 資料庫
-└── .env           # 環境變數
+├── server.js      # Main server file
+├── db.sqlite      # SQLite database
+└── .env           # Environment variables
 ```
 
 
-## 專案執行(後端)
+## Backend Setup
 
 ### 1. Clone Repository
 
