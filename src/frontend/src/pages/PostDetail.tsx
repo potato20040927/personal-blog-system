@@ -12,6 +12,18 @@ interface ContextType {
   setPosts?: (posts: Post[]) => void;
 }
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -51,6 +63,8 @@ const PostDetail: React.FC = () => {
     navigate(`/post/${id}/edit`);
   };
 
+  const isEdited = post.createdAt !== post.updatedAt;
+
   return (
   <div
     style={{
@@ -87,7 +101,21 @@ const PostDetail: React.FC = () => {
         marginTop: '3rem',
       }}
     >
-      <h1>{post.title}</h1>
+      <div style={{ marginBottom: '1rem' }}>
+        <h1 style={{ marginBottom: '0.3rem' }}>
+         {post.title}
+        </h1>
+
+        <div style={{ fontSize: '0.85rem', color: '#888' }}>
+          建立日期：{formatDate(post.createdAt)}
+
+          {isEdited && (
+            <span style={{ marginLeft: '10px' }}>
+              更新日期：{formatDate(post.updatedAt)}
+            </span>
+          )}
+        </div>
+      </div>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
     </div>
   </div>
