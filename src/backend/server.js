@@ -33,7 +33,9 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
-      category TEXT NOT NULL
+      category TEXT NOT NULL,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 });
@@ -77,14 +79,20 @@ app.post('/posts', (req, res) => {
   const sql = 'INSERT INTO posts (title, content, category) VALUES (?, ?, ?)';
   const params = [title, content, category];
 
-  db.run(sql, params, function(err) {
+  db.run(sql, params, function (err) {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ 
-      id: this.lastID,
-      title,
-      content,
-      category
-    });
+
+    db.get(
+      'SELECT * FROM posts WHERE id = ?',
+      [this.lastID],
+      (err, row) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.status(201).json(row);
+      }
+    );
   });
 });
 
@@ -96,13 +104,35 @@ app.put('/posts/:id', (req, res) => {
     return res.status(403).json({ error: '只有 admin 可以修改文章' });
   }
 
-  const sql = 'UPDATE posts SET title = ?, content = ?, category = ? WHERE id = ?';
+  const sql = `
+    UPDATE posts
+    SET
+      title = ?,
+      content = ?,
+      category = ?,
+      updatedAt = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `;
   const params = [title, content, category, id];
 
   db.run(sql, params, function(err) {
     if (err) return res.status(500).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: '文章不存在' });
-    res.json({ id: Number(id), title, content, category });
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: '文章不存在' });
+    }
+
+    db.get(
+      'SELECT * FROM posts WHERE id = ?',
+      [id],
+      (err, row) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.json(row);
+      }
+    );
   });
 });
 
@@ -137,7 +167,7 @@ app.post('/posts/:id/delete', (req, res) => {
       }
     }
 
-    db.run('DELETE FROM posts WHERE id = ?', [id], function(err) {
+    db.run('DELETE FROM posts WHERE id = ?', [id], function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: '文章與圖片已刪除' });
     });
