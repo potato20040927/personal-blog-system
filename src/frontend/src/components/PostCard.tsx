@@ -6,6 +6,8 @@ export interface Post {
   title: string;
   content: string;
   category?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface PostCardProps {
