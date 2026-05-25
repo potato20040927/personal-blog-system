@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Header from './Header';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { PostsContext } from './Layout';
 
 // mock useNavigate
 const mockNavigate = vi.fn();
@@ -23,6 +24,17 @@ vi.mock('../context/AuthContext', async () => {
   };
 });
 
+const mockContext = {
+  posts: [],
+  setPosts: vi.fn(),
+  category: '',
+  setCategory: vi.fn(),
+  search: '',
+  setSearch: vi.fn(),
+  index: new Map(),
+  setIndex: vi.fn(),
+};
+
 describe('Header', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
@@ -33,12 +45,13 @@ describe('Header', () => {
 
     render(
       <MemoryRouter>
-        <Header onSelectCategory={onSelectCategory} />
+        <PostsContext.Provider value={mockContext}>
+          <Header onSelectCategory={onSelectCategory} />
+        </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    const logo = screen.getByText("Potato's Blog");
-    fireEvent.click(logo);
+    fireEvent.click(screen.getByText("Potato's Blog"));
 
     expect(onSelectCategory).toHaveBeenCalledWith('');
     expect(mockNavigate).toHaveBeenCalledWith('/');
@@ -49,12 +62,13 @@ describe('Header', () => {
 
     render(
       <MemoryRouter>
-        <Header onSelectCategory={onSelectCategory} />
+        <PostsContext.Provider value={mockContext}>
+          <Header onSelectCategory={onSelectCategory} />
+        </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    const button = screen.getByText('旅遊');
-    fireEvent.click(button);
+    fireEvent.click(screen.getByText('旅遊'));
 
     expect(onSelectCategory).toHaveBeenCalledWith('旅遊');
     expect(mockNavigate).toHaveBeenCalledWith('/');
