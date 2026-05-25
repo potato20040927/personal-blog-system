@@ -4,6 +4,7 @@ import PostList from './PostList';
 import { PostsContext } from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
 import './HomePage.css';
+import { searchBigram } from '../utils/bigramIndex';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, '');
@@ -13,22 +14,44 @@ const HomePage: React.FC = () => {
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
 
-  const { posts, category, search } = context;
+  const { posts, category, search, index } = context;
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const filteredPosts = posts
-    .filter(p => !category || category === '全部' || p.category === category)
-    .filter(p => {
-      if (!search) return true;
+  let filteredPosts = posts;
 
-      const textContent = stripHtml(p.content);
+  filteredPosts = filteredPosts.filter(
+    p => !category || category === '全部' || p.category === category
+  );
 
-      return (
-        p.title.toLowerCase().includes(search.toLowerCase()) ||
-        textContent.toLowerCase().includes(search.toLowerCase())
-      );
-    });
+  if (search) {
+    const query = search.trim();
+
+    // 1字搜尋: fallback linear scan
+    if (query.length < 2) {
+      filteredPosts = filteredPosts.filter(p => {
+        const text = stripHtml(p.content);
+        return (
+          p.title.includes(query) ||
+          text.includes(query)
+        );
+      });
+    } else {
+      // bigram search
+      const ids = searchBigram(query, index);
+
+      filteredPosts = filteredPosts.filter(p => {
+        if (!ids.size) return false;
+
+        const text = stripHtml(p.content);
+
+        return (
+          ids.has(p.id) &&
+          (p.title.includes(query) || text.includes(query))
+        );
+      });
+    }
+  }
 
   return (
     <>
