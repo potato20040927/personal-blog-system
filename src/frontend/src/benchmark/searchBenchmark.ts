@@ -13,11 +13,11 @@ export function linearSearch(posts: any[], query: string) {
   });
 }
 
-export function bigramSearch(
-  posts: any[],
-  query: string,
-  index: any
-) {
+export function bigramSearch(posts: any[], query: string, index: any) {
+  if (query.length < 2) {
+    return linearSearch(posts, query);
+  }
+
   const ids = searchBigram(query, index);
 
   return posts.filter(p => ids.has(p.id));

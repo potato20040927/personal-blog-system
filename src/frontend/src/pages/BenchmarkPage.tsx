@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { PostsContext } from '../components/Layout';
 import { runBenchmark } from '../benchmark/runBenchmark';
+import PostList from './PostList';
 
 const BenchmarkPage: React.FC = () => {
   const context = useContext(PostsContext);
@@ -59,6 +60,7 @@ const BenchmarkPage: React.FC = () => {
       {/* Result */}
       {result && (
         <div style={{ marginTop: '2rem' }}>
+
           <p>
             Linear Search:
             {' '}
@@ -87,6 +89,19 @@ const BenchmarkPage: React.FC = () => {
           <p>Total Posts: {result.totalPosts}</p>
 
           <p>Total Bigrams in Index: {result.totalBigrams}</p>
+
+          <p>
+            Found Posts:
+            {' '}
+            {result.bigramResults.length}
+          </p>
+
+          <hr style={{ margin: '1.5rem 0' }} />
+
+          <h2>Matched Articles</h2>
+
+          <PostList posts={result.bigramResults} />
+
         </div>
       )}
     </div>
