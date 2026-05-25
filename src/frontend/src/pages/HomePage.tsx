@@ -10,11 +10,40 @@ function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, '');
 }
 
+function sortPosts(posts: any[], sortBy: string) {
+  const sorted = [...posts];
+
+  switch (sortBy) {
+    case 'updated-desc':
+      return sorted.sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+    case 'updated-asc':
+      return sorted.sort((a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+      );
+
+    case 'created-desc':
+      return sorted.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+    case 'created-asc':
+      return sorted.sort((a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+
+    default:
+      return sorted;
+  }
+}
+
 const HomePage: React.FC = () => {
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
 
-  const { posts, category, search, index } = context;
+  const { posts, category, search, index, sortBy } = context;
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -52,6 +81,8 @@ const HomePage: React.FC = () => {
       });
     }
   }
+
+  filteredPosts = sortPosts(filteredPosts, sortBy);
 
   return (
     <>

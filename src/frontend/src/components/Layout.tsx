@@ -14,6 +14,8 @@ export const PostsContext = createContext<{
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   index: Map<string, Set<number>>;
   setIndex: React.Dispatch<React.SetStateAction<Map<string, Set<number>>>>;
+  sortBy: string;
+  setSortBy: React.Dispatch<React.SetStateAction<string>>;
 } | null>(null);
 
 const Layout: React.FC = () => {
@@ -21,6 +23,7 @@ const Layout: React.FC = () => {
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [index, setIndex] = useState<Map<string, Set<number>>>(new Map());
+  const [sortBy, setSortBy] = useState('updated-desc');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -37,7 +40,7 @@ const Layout: React.FC = () => {
   }, []);
 
   return (
-    <PostsContext.Provider value={{ posts, setPosts, category, setCategory, search, setSearch, index, setIndex }}>
+    <PostsContext.Provider value={{ posts, setPosts, category, setCategory, search, setSearch, index, setIndex, sortBy, setSortBy }}>
       <Header 
         onSelectCategory={setCategory}
         onSearch={setSearch}

@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
 
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
-  const { search } = context;
+  const { search, sortBy, setSortBy } = context;
 
   return (
     <header style={styles.header}>
@@ -28,23 +28,36 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
           </button>
         ))}
 
-        <div style={styles.searchWrapper}>
-          <input
-            type="text"
-            placeholder="搜尋文章..."
-            value={search}
-            onChange={(e) => onSearch?.(e.target.value)}
-            style={styles.searchInput}
-          />
+        <div style={styles.controlGroup}>
+          <div style={styles.searchWrapper}>
+            <input
+              type="text"
+              placeholder="搜尋文章..."
+              value={search}
+              onChange={(e) => onSearch?.(e.target.value)}
+              style={styles.searchInput}
+            />
 
-          {search && (
-            <button
-              onClick={() => onSearch?.('')}
-              style={styles.clearButton}
-            >
-              ✖
-            </button>
-          )}
+            {search && (
+              <button
+                onClick={() => onSearch?.('')}
+                style={styles.clearButton}
+              >
+                ✖
+              </button>
+            )}
+          </div>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={styles.sortSelect}
+          >
+            <option value="updated-desc">最近更新</option>
+            <option value="updated-asc">最舊更新</option>
+            <option value="created-desc">最新發布</option>
+            <option value="created-asc">最舊發布</option>
+          </select>
         </div>
 
         {user ? (
@@ -87,6 +100,23 @@ const styles = {
     fontSize: '0.9rem',
     color: '#666'
   },
+  sortSelect: {
+    padding: '0.4rem',
+    borderRadius: '4px',
+    border: '1px solid rgba(0,0,0,0.2)',
+    fontSize: '0.9rem',
+    backgroundColor: 'transparent',
+    color: 'black',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    cursor: 'pointer',
+  },
+  controlGroup: {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.75rem',
+},
   logo: { cursor: 'pointer', margin: 0, fontWeight: 'bold' },
   nav: { display: 'flex', gap: '1rem' },
   button: { background: 'none', border: 'none', color: 'black', cursor: 'pointer', fontSize: '1rem' },
