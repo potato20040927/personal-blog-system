@@ -96,45 +96,47 @@ export class PostBST<T = unknown> {
   // DELETE (O log n)
   delete(item: T) {
     const key = this.getKey(item);
-    this.root = this._delete(this.root, key, item);
+    this.root = this._delete(this.root, key);
   }
 
-  private _delete(node: Node<T> | null, key: number, item: T): Node<T> | null {
+  private _delete(node: Node<T> | null, key: number): Node<T> | null {
     if (!node) return null;
 
     if (key < node.key) {
-      node.left = this._delete(node.left, key, item);
+      node.left = this._delete(node.left, key);
     } else if (key > node.key) {
-      node.right = this._delete(node.right, key, item);
+      node.right = this._delete(node.right, key);
     } else {
-      if (node.item !== item) {
-        node.right = this._delete(node.right, key, item);
+      // found node
+
+      if (!node.left || !node.right) {
+        node = node.left || node.right;
       } else {
-        if (!node.left || !node.right) {
-          node = node.left || node.right;
-        } else {
-          const temp = this._getMin(node.right);
-          node.item = temp.item;
-          node.key = temp.key;
-          node.right = this._delete(node.right, temp.key, temp.item);
-        }
+        const temp = this._getMin(node.right);
+        node.item = temp.item;
+        node.key = temp.key;
+        node.right = this._delete(node.right, temp.key);
       }
     }
 
     if (!node) return null;
 
-    // 1. 更新高度
+    // AVL rebalance
     this.updateHeight(node);
 
-    // 2. 平衡檢查
     const balance = this.getBalance(node);
 
-    if (balance > 1 && this.getBalance(node.left) >= 0) return this.rotateRight(node);
+    if (balance > 1 && this.getBalance(node.left) >= 0)
+      return this.rotateRight(node);
+
     if (balance > 1 && this.getBalance(node.left) < 0) {
       node.left = this.rotateLeft(node.left!);
       return this.rotateRight(node);
     }
-    if (balance < -1 && this.getBalance(node.right) <= 0) return this.rotateLeft(node);
+
+    if (balance < -1 && this.getBalance(node.right) <= 0)
+      return this.rotateLeft(node);
+
     if (balance < -1 && this.getBalance(node.right) > 0) {
       node.right = this.rotateRight(node.right!);
       return this.rotateLeft(node);
