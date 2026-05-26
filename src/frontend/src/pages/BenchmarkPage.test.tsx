@@ -4,33 +4,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import BenchmarkPage from './BenchmarkPage';
 import { PostsContext } from '../components/Layout';
 
-// mock runBenchmark
+// 1. Mock 效能測試邏輯
 vi.mock('../benchmark/runBenchmark', () => ({
   runBenchmark: vi.fn(() => ({
     linearTime: 1.2,
     bigramTime: 0.3,
     speedup: 4,
-    totalPosts: 100,
-    totalBigrams: 200,
     bigramResults: [
-      { id: 1, title: 'Test Post 1', content: 'Hello' },
-      { id: 2, title: 'Test Post 2', content: 'World' },
+      { id: 1, title: 'Test Post 1', content: 'Hello', category: 'News', createdAt: '2024-01-01' },
     ],
+  })),
+  runSortBenchmark: vi.fn(() => ({
+    legacySortTime: 2.5,
+    avlSortTime: 0.5,
+    sortSpeedup: 5.0,
   })),
 }));
 
 const mockContext = {
   posts: [
-    { id: 1, title: 'Test Post 1', content: 'Hello' },
-    { id: 2, title: 'Test Post 2', content: 'World' },
+    { id: 1, title: 'Test Post 1', content: 'Hello', category: 'News', createdAt: '2024-01-01' },
   ],
-  setPosts: vi.fn(),
-  category: '',
-  setCategory: vi.fn(),
-  search: '',
-  setSearch: vi.fn(),
   index: new Map(),
-  setIndex: vi.fn(),
+  category: '',
+  search: '',
+  sortBy: 'created-desc',
 };
 
 describe('BenchmarkPage', () => {
@@ -38,7 +36,7 @@ describe('BenchmarkPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders benchmark UI correctly', () => {
+  it('應該正確渲染基準測試頁面的標題與區塊', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={mockContext as any}>
@@ -47,12 +45,13 @@ describe('BenchmarkPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Benchmark Search')).toBeDefined();
-    expect(screen.getByText('Run Benchmark')).toBeDefined();
-    expect(screen.getByPlaceholderText(/輸入搜尋關鍵字/)).toBeDefined();
+    expect(screen.getByText('System Performance Benchmark')).toBeDefined();
+    expect(screen.getByText('1. Search Performance')).toBeDefined();
+    expect(screen.getByText('2. Sort Performance')).toBeDefined();
+    expect(screen.getByPlaceholderText('關鍵字...')).toBeDefined();
   });
 
-  it('shows result after clicking run', () => {
+  it('執行搜尋測試後應顯示 Linear 與 Bigram 數據', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={mockContext as any}>
@@ -61,20 +60,19 @@ describe('BenchmarkPage', () => {
       </MemoryRouter>
     );
 
-    const input = screen.getByPlaceholderText(/輸入搜尋關鍵字/);
-    const button = screen.getByText('Run Benchmark');
+    const input = screen.getByPlaceholderText('關鍵字...');
+    const button = screen.getByRole('button', { name: 'Run' }); // 搜尋區塊的按鈕文字是 Run
 
-    fireEvent.change(input, { target: { value: '天' } });
+    fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.click(button);
 
-    expect(screen.getByText(/Linear Search:/)).toBeDefined();
-    expect(screen.getByText(/Bigram Search:/)).toBeDefined();
+    expect(screen.getByText(/Linear:/)).toBeDefined();
+    expect(screen.getByText(/Bigram Index:/)).toBeDefined();
     expect(screen.getByText(/Speedup:/)).toBeDefined();
-    expect(screen.getByText(/Found Posts:/)).toBeDefined();
     expect(screen.getByText(/Matched Articles/)).toBeDefined();
   });
 
-  it('does not run when query is empty', () => {
+  it('執行排序測試後應顯示 Array.sort 與 AVL Tree 數據', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={mockContext as any}>
@@ -83,10 +81,26 @@ describe('BenchmarkPage', () => {
       </MemoryRouter>
     );
 
-    const button = screen.getByText('Run Benchmark');
+    const sortButton = screen.getByText('Run Sort Benchmark');
+    fireEvent.click(sortButton);
+
+    expect(screen.getByText(/Array\.sort \(Standard\):/)).toBeDefined();
+    expect(screen.getByText(/AVL Tree \(Indexed\):/)).toBeDefined();
+    expect(screen.getByText(/Speedup:/)).toBeDefined();
+  });
+
+  it('當輸入為空時點擊 Run 不應觸發搜尋', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={mockContext as any}>
+          <BenchmarkPage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    const button = screen.getByRole('button', { name: 'Run' });
     fireEvent.click(button);
 
-    // result 不應該出現
-    expect(screen.queryByText(/Linear Search:/)).toBeNull();
+    expect(screen.queryByText(/Linear:/)).toBeNull();
   });
 });

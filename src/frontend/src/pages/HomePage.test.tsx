@@ -3,15 +3,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import HomePage from './HomePage';
 import { PostsContext } from '../components/Layout';
+import { buildBigramIndex } from '../utils/bigramIndex'; // 1. 匯入建索引工具
 
-// mock Auth
+// Mock AuthContext
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
     user: { role: 'admin' },
   }),
 }));
 
-// mock navigate
+// Mock useNavigate
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<any>('react-router-dom');
   return {
@@ -23,49 +24,55 @@ vi.mock('react-router-dom', async () => {
 const mockPosts = [
   {
     id: 1,
-    title: '今天 天氣很好',
-    content: 'abc',
+    title: '第一篇舊文章',
+    content: '這是較舊的內容',
     category: '日記',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
+    createdAt: '2024-01-01T10:00:00Z',
+    updatedAt: '2024-01-01T10:00:00Z',
   },
   {
     id: 2,
-    title: '旅遊記錄',
-    content: '台北',
+    title: '最新旅遊記錄',
+    content: '這是較新的內容',
     category: '旅遊',
-    createdAt: '2024-01-02',
-    updatedAt: '2024-01-02',
+    createdAt: '2024-02-01T10:00:00Z',
+    updatedAt: '2024-02-01T10:00:00Z',
   },
 ];
 
-const mockContext = {
+// 2. 建立真實的 Bigram Index 供測試使用
+const mockIndex = buildBigramIndex(mockPosts);
+
+const mockContextBase = {
   posts: mockPosts,
   setPosts: vi.fn(),
   category: null,
   setCategory: vi.fn(),
   search: '',
   setSearch: vi.fn(),
-  index: new Map(),
+  index: mockIndex,
   setIndex: vi.fn(),
+  sortBy: 'created-desc',
 };
 
-describe('HomePage', () => {
-  it('renders posts without crashing', () => {
+describe('HomePage (AVL Tree Version)', () => {
+  it('可以正常渲染文章列表', () => {
     render(
       <MemoryRouter>
-        <PostsContext.Provider value={mockContext as any}>
+        <PostsContext.Provider value={mockContextBase as any}>
           <HomePage />
         </PostsContext.Provider>
       </MemoryRouter>
     );
+    expect(screen.getByText('最新旅遊記錄')).toBeDefined();
+    expect(screen.getByText('第一篇舊文章')).toBeDefined();
   });
 
-  it('filters by category correctly', () => {
+  it('分類過濾邏輯正確', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={{
-          ...mockContext,
+          ...mockContextBase,
           category: '旅遊',
         } as any}>
           <HomePage />
@@ -73,72 +80,92 @@ describe('HomePage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('旅遊記錄')).toBeDefined();
+    expect(screen.getByText('最新旅遊記錄')).toBeDefined();
+    expect(screen.queryByText('第一篇舊文章')).toBeNull();
   });
 
-  it('filters by search keyword', () => {
+  it('搜尋功能（Bigram/Linear）邏輯正確', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={{
-          ...mockContext,
-          search: '天',
+          ...mockContextBase,
+          search: '旅遊',
         } as any}>
           <HomePage />
         </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    expect(screen.getByText('今天 天氣很好')).toBeDefined();
+    expect(screen.getByText('最新旅遊記錄')).toBeDefined();
+    expect(screen.queryByText('第一篇舊文章')).toBeNull();
   });
 
-  it('applies sort correctly (updated-desc)', () => {
+  it('驗證 AVL Tree 排序功能 (created-desc)', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={{
-          ...mockContext,
-          sortBy: 'updated-desc',
+          ...mockContextBase,
+          sortBy: 'created-desc',
         } as any}>
           <HomePage />
         </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    const items = screen.getAllByText(/今天 天氣很好|旅遊記錄/);
-
-    // 真正驗證順序（旅遊記錄比較新）
-    expect(items[0].textContent).toBe('旅遊記錄');
-    expect(items[1].textContent).toBe('今天 天氣很好');
+    const items = screen.getAllByRole('heading'); 
+    expect(items[0].textContent).toMatch(/最新旅遊記錄/);
+    expect(items[1].textContent).toMatch(/第一篇舊文章/);
   });
 
-  it('applies search and sort together', () => {
+  it('驗證 AVL Tree 反向排序功能 (created-asc)', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={{
-          ...mockContext,
-          search: '天',
-          sortBy: 'updated-desc',
+          ...mockContextBase,
+          sortBy: 'created-asc',
         } as any}>
           <HomePage />
         </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    expect(screen.getByText('今天 天氣很好')).toBeDefined();
+    const items = screen.getAllByRole('heading');
+    expect(items[0].textContent).toMatch(/第一篇舊文章/);
+    expect(items[1].textContent).toMatch(/最新旅遊記錄/);
   });
 
-  it('handles empty search safely', () => {
+  it('同時應用搜尋與排序', () => {
     render(
       <MemoryRouter>
         <PostsContext.Provider value={{
-          ...mockContext,
-          search: '',
+          ...mockContextBase,
+          search: '內容',
+          sortBy: 'created-asc',
         } as any}>
           <HomePage />
         </PostsContext.Provider>
       </MemoryRouter>
     );
 
-    expect(screen.getByText('今天 天氣很好')).toBeDefined();
-    expect(screen.getByText('旅遊記錄')).toBeDefined();
+    const items = screen.getAllByRole('heading');
+    expect(items.length).toBe(2);
+    expect(items[0].textContent).toMatch(/第一篇舊文章/);
+  });
+
+  it('當資料為空時，不應崩潰', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{
+          ...mockContextBase,
+          posts: [],
+          index: new Map(),
+        } as any}>
+          <HomePage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+    
+    const items = screen.queryAllByRole('article');
+    expect(items.length).toBe(0);
   });
 });
