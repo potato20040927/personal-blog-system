@@ -151,13 +151,23 @@ app.post('/auth/login', (req, res) => {
 // GET all posts
 app.get('/posts', (req, res) => {
   const category = req.query.category;
-  let sql = 'SELECT * FROM posts';
+
+  let sql = `
+    SELECT 
+      posts.*,
+      COUNT(likes.id) AS likeCount
+    FROM posts
+    LEFT JOIN likes ON posts.id = likes.post_id
+  `;
+
   const params = [];
 
   if (category) {
-    sql += ' WHERE category = ?';
+    sql += ' WHERE posts.category = ?';
     params.push(category);
   }
+
+  sql += ' GROUP BY posts.id';
 
   db.all(sql, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });

@@ -57,6 +57,7 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
             <option value="updated-asc">最舊更新</option>
             <option value="created-desc">最新發布</option>
             <option value="created-asc">最舊發布</option>
+            <option value="likes-desc">按讚最多</option>
           </select>
         </div>
 

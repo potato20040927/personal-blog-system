@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import './HomePage.css';
 import { searchBigram } from '../utils/bigramIndex';
 import { PostIndexManager } from '../utils/PostIndexManager';
+import { TopKHeapManager } from '../utils/TopKHeapManager';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, '');
@@ -23,6 +24,8 @@ const HomePage: React.FC = () => {
     (p) => new Date(p.createdAt).getTime(),
     (p) => new Date(p.updatedAt).getTime()
   )).current;
+
+  const topKManager = useRef(new TopKHeapManager(10)).current;
 
   const [treeVersion, setTreeVersion] = useState(0);
   const prevPostsRef = useRef<any[]>([]);
@@ -64,6 +67,12 @@ const HomePage: React.FC = () => {
     prevPostsRef.current = posts;
   }, [posts, indexManager]);
 
+  useEffect(() => {
+    if (!posts) return;
+    posts.forEach(p => topKManager.update(p));
+
+  }, [posts]);
+
   const sortedPosts = useMemo(() => {
     if (posts.length === 0) return [];
 
@@ -72,6 +81,7 @@ const HomePage: React.FC = () => {
       case 'created-asc':  return indexManager.getCreatedAsc();
       case 'updated-desc': return indexManager.getUpdatedDesc();
       case 'updated-asc':  return indexManager.getUpdatedAsc();
+      case 'likes-desc':   return topKManager.getTopK();
       default:             return indexManager.getCreatedDesc();
     }
   }, [sortBy, indexManager, treeVersion, posts.length]);

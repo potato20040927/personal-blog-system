@@ -8,6 +8,7 @@ export interface Post {
   category?: string;
   createdAt: string;
   updatedAt: string;
+  likeCount: number;
 }
 
 interface PostCardProps {
