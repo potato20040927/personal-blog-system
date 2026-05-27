@@ -13,7 +13,6 @@ export const createPost = (data: {
   title: string;
   content: string;
   category: string;
-  user: any;
 }) => {
   return apiClient<Post>('/posts', {
     method: 'POST',
@@ -27,7 +26,6 @@ export const updatePost = (
     title: string;
     content: string;
     category: string;
-    user: any;
   }
 ) => {
   return apiClient<Post>(`/posts/${id}`, {
@@ -36,9 +34,8 @@ export const updatePost = (
   });
 };
 
-export const deletePost = (id: string | number, user: any) => {
+export const deletePost = (id: string | number) => {
   return apiClient<{ message: string }>(`/posts/${id}/delete`, {
     method: 'POST',
-    body: { user },
   });
 };

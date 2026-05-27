@@ -2,11 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+require('dotenv').config();
 
 const app = express();
 const PORT = 8000;
-
-require('dotenv').config();
 
 const cloudinary = require('cloudinary').v2;
 
@@ -15,6 +17,8 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -38,8 +42,104 @@ db.serialize(() => {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 });
 
+
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).json({ error: 'No token' });
+  }
+
+  const token = header.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+
+function adminOnly(req, res, next) {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  next();
+}
+
+
+// REGISTER
+app.post('/auth/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+
+  db.run(
+    `INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'user')`,
+    [username, hash],
+    function (err) {
+      if (err) {
+        return res.status(400).json({ error: 'Username exists' });
+      }
+
+      res.json({ message: 'Register success' });
+    }
+  );
+});
+
+
+// LOGIN
+app.post('/auth/login', (req, res) => {
+  const { username, password } = req.body;
+
+  db.get(
+    `SELECT * FROM users WHERE username = ?`,
+    [username],
+    async (err, user) => {
+      if (err || !user) {
+        return res.status(401).json({ error: 'Login failed' });
+      }
+
+      const ok = await bcrypt.compare(password, user.password_hash);
+
+      if (!ok) {
+        return res.status(401).json({ error: 'Login failed' });
+      }
+
+      const token = jwt.sign(
+        {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      res.json({ token, role: user.role, username: user.username });
+    }
+  );
+});
+
+
+// GET all posts
 app.get('/posts', (req, res) => {
   const category = req.query.category;
   let sql = 'SELECT * FROM posts';
@@ -56,136 +156,101 @@ app.get('/posts', (req, res) => {
   });
 });
 
+
+// GET single post
 app.get('/posts/:id', (req, res) => {
   const id = req.params.id;
   db.get('SELECT * FROM posts WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: '文章不存在' });
+    if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
   });
 });
 
-app.post('/posts', (req, res) => {
-  const { title, content, category, user } = req.body;
 
-  if (!user || user.role !== 'admin') {
-    return res.status(403).json({ error: '只有 admin 可以新增文章' });
-  }
+// CREATE post (admin only)
+app.post('/posts', authMiddleware, adminOnly, (req, res) => {
+  const { title, content, category} = req.body;
 
   if (!title || !content || !category) {
-    return res.status(400).json({ error: '缺少必要欄位' });
+    return res.status(400).json({ error: 'Missing fields' });
   }
 
-  const sql = 'INSERT INTO posts (title, content, category) VALUES (?, ?, ?)';
-  const params = [title, content, category];
+  db.run(
+    `INSERT INTO posts (title, content, category) VALUES (?, ?, ?)`,
+    [title, content, category],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
 
-  db.run(sql, params, function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    db.get(
-      'SELECT * FROM posts WHERE id = ?',
-      [this.lastID],
-      (err, row) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
+      db.get(
+        `SELECT * FROM posts WHERE id = ?`,
+        [this.lastID],
+        (err, row) => {
+          res.status(201).json(row);
         }
-
-        res.status(201).json(row);
-      }
-    );
-  });
-});
-
-app.put('/posts/:id', (req, res) => {
-  const { id } = req.params;
-  const { title, content, category, user } = req.body;
-
-  if (!user || user.role !== 'admin') {
-    return res.status(403).json({ error: '只有 admin 可以修改文章' });
-  }
-
-  const sql = `
-    UPDATE posts
-    SET
-      title = ?,
-      content = ?,
-      category = ?,
-      updatedAt = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `;
-  const params = [title, content, category, id];
-
-  db.run(sql, params, function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (this.changes === 0) {
-      return res.status(404).json({ error: '文章不存在' });
+      );
     }
-
-    db.get(
-      'SELECT * FROM posts WHERE id = ?',
-      [id],
-      (err, row) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-
-        res.json(row);
-      }
-    );
-  });
+  );
 });
 
-app.post('/posts/:id/delete', (req, res) => {
-  const { id } = req.params;
-  const { user } = req.body;
 
-  if (!user || user.role !== 'admin') {
-    return res.status(403).json({ error: '只有 admin 可以刪除文章' });
-  }
+// UPDATE post (admin only)
+app.put('/posts/:id', authMiddleware, adminOnly, (req, res) => {
+  const { title, content, category } = req.body;
 
-  db.get('SELECT * FROM posts WHERE id = ?', [id], async (err, post) => {
+  db.run(
+    `
+    UPDATE posts
+    SET title = ?, content = ?, category = ?, updatedAt = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `,
+    [title, content, category, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0)
+        return res.status(404).json({ error: 'Not found' });
+
+      db.get(
+        'SELECT * FROM posts WHERE id = ?',
+        [req.params.id],
+        (err, row) => res.json(row)
+      );
+    }
+  );
+});
+
+
+// DELETE post (admin only + cloudinary cleanup)
+app.post('/posts/:id/delete', authMiddleware, adminOnly, (req, res) => {
+  db.get('SELECT * FROM posts WHERE id = ?', [req.params.id], async (err, post) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!post) return res.status(404).json({ error: '文章不存在' });
+    if (!post) return res.status(404).json({ error: 'Not found' });
 
-    const content = post.content;
+    const regex =
+      /https:\/\/res\.cloudinary\.com\/dkoc0xopr\/image\/upload\/v\d+\/([^"'\s]+)/g;
 
-    const regex = /https:\/\/res\.cloudinary\.com\/dkoc0xopr\/image\/upload\/v\d+\/([^"'\s]+)/g;
     let match;
     const publicIds = [];
 
-    while ((match = regex.exec(content)) !== null) {
+    while ((match = regex.exec(post.content)) !== null) {
       publicIds.push(match[1].replace(/\.[a-zA-Z]+$/, ''));
     }
 
     for (const pid of publicIds) {
       try {
         await cloudinary.uploader.destroy(pid);
-        console.log('已刪除圖片:', pid);
-      } catch (err) {
-        console.error('刪除圖片失敗:', pid, err);
+      } catch (e) {
+        console.error(e);
       }
     }
 
-    db.run('DELETE FROM posts WHERE id = ?', [id], function (err) {
+    db.run('DELETE FROM posts WHERE id = ?', [req.params.id], function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: '文章與圖片已刪除' });
+      res.json({ message: 'Deleted' });
     });
   });
 });
 
-const users = [
-  { username: 'admin', password: '1234', role: 'admin' },
-  { username: 'user', password: '1234', role: 'user' },
-];
-
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (!user) return res.status(401).json({ error: '登入失敗' });
-
-  res.json({ username: user.username, role: user.role, isLoggedIn: true });
-});
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, type ReactNode, useEffect } from 'react';
+import { apiClient } from '../api/client';
 
-export type UserRole = 'guest' | 'member' | 'admin';
+export type UserRole = 'user' | 'admin';
 
 export interface User {
   username: string;
@@ -9,7 +10,9 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
+  token: string | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -17,37 +20,69 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+
+    if (storedToken && storedUser) {
+      setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
   }, []);
 
-  const users = [
-    { username: 'admin', password: '1234', role: 'admin' },
-    { username: 'member', password: '1234', role: 'member' },
-  ];
 
-  const login = (username: string, password: string) => {
-    const found = users.find(u => u.username === username && u.password === password);
-    if (found) {
-      const loggedUser = { username: found.username, role: found.role };
-      setUser(loggedUser);
-      localStorage.setItem('user', JSON.stringify(loggedUser));
+  const login = async (username: string, password: string) => {
+    try {
+      const res = await apiClient<{
+        token: string;
+        username: string;
+        role: UserRole;
+      }>('/auth/login', {
+        method: 'POST',
+        body: { username, password },
+      });
+
+      const userData = {
+        username: res.username,
+        role: res.role,
+      };
+
+      setUser(userData);
+      setToken(res.token);
+
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+
       return true;
+    } catch {
+      return false;
     }
-    return false;
+  };
+
+  const register = async (username: string, password: string) => {
+    try {
+      await apiClient('/auth/register', {
+        method: 'POST',
+        body: { username, password },
+      });
+
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

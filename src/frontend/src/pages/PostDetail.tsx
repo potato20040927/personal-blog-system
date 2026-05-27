@@ -1,16 +1,10 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { type Post } from '../components/PostCard';
 import { useAuth } from '../context/AuthContext';
 import { deletePost } from '../api/posts';
 import { useContext } from 'react';
 import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
-
-interface ContextType {
-  initialPosts: Post[];
-  setPosts?: (posts: Post[]) => void;
-}
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -36,8 +30,10 @@ const PostDetail: React.FC = () => {
   const post = posts.find(p => p.id === Number(id));
   if (!post) return <p>找不到文章</p>;
 
+  const isAdmin = user?.role === 'admin';
+
   const handleDelete = async () => {
-    if (!user || user.role !== 'admin') {
+    if (!isAdmin) {
       alert('你沒有權限刪除文章');
       return;
     }
@@ -46,7 +42,7 @@ const PostDetail: React.FC = () => {
     if (!confirmDelete) return;
 
     try {
-      const data = await deletePost(id!, user);
+      const data = await deletePost(id!);
 
       alert(data.message || '文章已刪除');
 
@@ -59,7 +55,7 @@ const PostDetail: React.FC = () => {
   };
 
   const handleEdit = () => {
-    if (!user || user.role !== 'admin') return;
+    if (!isAdmin) return;
     navigate(`/post/${id}/edit`);
   };
 
@@ -80,7 +76,7 @@ const PostDetail: React.FC = () => {
         返回
       </button>
 
-      {user?.role === 'admin' && (
+      {isAdmin && (
         <>
           <button className="btn btn-edit" onClick={handleEdit}>
             修改
