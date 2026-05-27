@@ -88,6 +88,8 @@ const PostDetail: React.FC = () => {
   const isEdited = post.createdAt !== post.updatedAt;
 
   const handleLike = async () => {
+    if (loadingLike || !id) return;
+
     if (!isLoggedIn) {
       alert('請先登入才能按讚');
       navigate('/login');
