@@ -101,11 +101,13 @@ const HomePage: React.FC = () => {
     return result;
   }, [sortedPosts, category, search, index]);
 
+  const isAdmin = user?.role === 'admin';
+
   return (
     <>
       <PostList posts={finalDisplayPosts} />
 
-      {user?.role === 'admin' && (
+      {isAdmin && (
         <button
           onClick={() => navigate('/new')}
           className="floating-btn"

@@ -2,35 +2,34 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const LoginPage: React.FC = () => {
+const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (!username || !password) {
       setError('請輸入帳號與密碼');
       return;
     }
 
-    const success = await login(username, password);
+    const success = await register(username, password);
 
     if (success) {
-      navigate('/');
+      navigate('/login');
     } else {
-      setError('登入失敗，請檢查帳號或密碼');
+      setError('註冊失敗（帳號可能已存在）');
     }
   };
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h2>登入</h2>
+      <h2>註冊</h2>
 
       <form
         onSubmit={handleSubmit}
@@ -54,16 +53,12 @@ const LoginPage: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit">登入</button>
+        <button type="submit">註冊</button>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
-
-      <p>
-        還沒有帳號？ <a href="/register">註冊</a>
-      </p>
     </div>
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

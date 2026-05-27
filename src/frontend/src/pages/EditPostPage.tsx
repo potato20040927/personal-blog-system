@@ -34,6 +34,8 @@ const EditPostPage: React.FC = () => {
   const [category, setCategory] = useState(categories[0]);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
     if (!id) return;
 
@@ -59,7 +61,9 @@ const EditPostPage: React.FC = () => {
     console.log('文章內容:', content);
     e.preventDefault();
 
-    if (!user || user.role !== 'admin') {
+    
+
+    if (!isAdmin) {
       alert('你沒有權限修改文章');
       return;
     }
@@ -69,7 +73,6 @@ const EditPostPage: React.FC = () => {
         title,
         content,
         category,
-        user,
       });
 
       if (setPosts) {
@@ -87,7 +90,7 @@ const EditPostPage: React.FC = () => {
   };
 
 
-  if (!user || user.role !== 'admin') {
+  if (!isAdmin) {
     return <p style={{ padding: '2rem' }}>你沒有權限修改文章</p>;
   }
 

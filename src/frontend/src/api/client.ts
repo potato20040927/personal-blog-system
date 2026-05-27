@@ -10,9 +10,13 @@ export const apiClient = async <T>(
 ): Promise<T> => {
   const { body, headers, ...rest } = options;
 
+   const token = localStorage.getItem('token');
+
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,

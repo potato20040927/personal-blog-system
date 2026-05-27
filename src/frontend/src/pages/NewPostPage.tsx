@@ -36,7 +36,7 @@ const modules = {
       ['clean']
     ],
     handlers: {
-      image: async function () {
+      image: async function (this: any) {
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
         input.setAttribute('accept', 'image/*');
@@ -70,10 +70,12 @@ const NewPostPage: React.FC = () => {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState(categories[0]);
 
+  const isAdmin = user?.role === 'admin';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user || user.role !== 'admin') {
+    if (!isAdmin) {
       alert('只有 admin 可以新增文章');
       return;
     }
@@ -83,10 +85,8 @@ const NewPostPage: React.FC = () => {
         title,
         content,
         category,
-        user,
       });
 
-      // 立即更新 Layout 的 posts state
       setPosts(prev => [...prev, newPost]);
 
       alert('文章新增成功！');
@@ -97,7 +97,7 @@ const NewPostPage: React.FC = () => {
     }
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!isAdmin) {
     return <p style={{ padding: '2rem' }}>你沒有權限新增文章</p>;
   }
 
