@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import PostDetail from './PostDetail';
 import { PostsContext } from '../components/Layout';
+import { createMockPostsContext } from '../test-utils/createMockPostsContext';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -19,6 +20,15 @@ vi.mock('../api/posts', () => ({
   deletePost: (...args: any[]) => mockDeletePost(...args),
 }));
 
+const mockGetLikeStatus = vi.fn();
+const mockToggleLike = vi.fn();
+
+vi.mock('../api/posts', () => ({
+  deletePost: (...args: any[]) => mockDeletePost(...args),
+  getLikeStatus: (...args: any[]) => mockGetLikeStatus(...args),
+  toggleLike: (...args: any[]) => mockToggleLike(...args),
+}));
+
 describe('PostDetail', () => {
   const mockSetPosts = vi.fn();
 
@@ -27,7 +37,14 @@ describe('PostDetail', () => {
     title: '測試文章',
     content: '<p>內容</p>',
     category: '旅遊',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
   };
+
+  const baseContext = createMockPostsContext({
+    posts: [post],
+    setPosts: mockSetPosts,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,7 +56,7 @@ describe('PostDetail', () => {
     });
 
     render(
-      <PostsContext.Provider value={{ posts: [], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={createMockPostsContext({ posts: [] })}>
         <PostDetail />
       </PostsContext.Provider>
     );
@@ -53,7 +70,7 @@ describe('PostDetail', () => {
     });
 
     render(
-      <PostsContext.Provider value={{ posts: [post], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={baseContext}>
         <PostDetail />
       </PostsContext.Provider>
     );
@@ -68,7 +85,7 @@ describe('PostDetail', () => {
     });
 
     render(
-      <PostsContext.Provider value={{ posts: [post], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={baseContext}>
         <PostDetail />
       </PostsContext.Provider>
     );
@@ -88,7 +105,7 @@ describe('PostDetail', () => {
     window.alert = vi.fn();
 
     render(
-      <PostsContext.Provider value={{ posts: [post], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={baseContext}>
         <PostDetail />
       </PostsContext.Provider>
     );
@@ -111,7 +128,7 @@ describe('PostDetail', () => {
     window.confirm = vi.fn(() => false);
 
     render(
-      <PostsContext.Provider value={{ posts: [post], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={baseContext}>
         <PostDetail />
       </PostsContext.Provider>
     );
@@ -129,11 +146,92 @@ describe('PostDetail', () => {
     window.alert = vi.fn();
 
     render(
-      <PostsContext.Provider value={{ posts: [post], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={baseContext}>
         <PostDetail />
       </PostsContext.Provider>
     );
 
     expect(screen.queryByText('刪除')).not.toBeInTheDocument();
+  });
+
+  it('顯示已按讚狀態', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, role: 'user' },
+    });
+
+    mockGetLikeStatus.mockResolvedValue({
+      count: 5,
+      liked: true,
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    // 等 API 完成
+    expect(await screen.findByText('5')).toBeInTheDocument();
+
+    // button 狀態驗證
+    const button = screen.getByTestId('like-button');
+    expect(button).toHaveTextContent('5');
+  });
+
+  it('未登入時 liked 為 false 但 count 正常', async () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+    });
+
+    mockGetLikeStatus.mockResolvedValue({
+      count: 3,
+      liked: true, // 前端應忽略
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    expect(await screen.findByText('3')).toBeInTheDocument();
+
+    const button = screen.getByTestId('like-button');
+    expect(button).toHaveTextContent('3');
+  });
+
+  it('點擊按讚會呼叫 toggleLike', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, role: 'user' },
+    });
+
+    mockGetLikeStatus.mockResolvedValue({
+      count: 1,
+      liked: false,
+    });
+
+    mockToggleLike.mockResolvedValue({
+      count: 2,
+      liked: true,
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    const button = await screen.findByTestId('like-button');
+
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(mockToggleLike).toHaveBeenCalledWith('1');
+    });
+
+    // UI 更新驗證
+    await waitFor(() => {
+      expect(screen.getByTestId('like-button')).toHaveTextContent('2');
+    });
   });
 });

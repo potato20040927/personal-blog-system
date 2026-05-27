@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { deletePost } from '../api/posts';
+import { deletePost, getLikeStatus, toggleLike } from '../api/posts';
 import { useContext } from 'react';
 import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -21,16 +22,22 @@ const formatDate = (dateStr?: string) => {
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
 
   const { posts, setPosts } = context;
   const { user } = useAuth();
-
-  const post = posts.find(p => p.id === Number(id));
-  if (!post) return <p>找不到文章</p>;
+  const isLoggedIn = !!user;
 
   const isAdmin = user?.role === 'admin';
+
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [loadingLike, setLoadingLike] = useState(true);
+
+  const post = posts.find(p => p.id === Number(id));
+  
 
   const handleDelete = async () => {
     if (!isAdmin) {
@@ -59,7 +66,44 @@ const PostDetail: React.FC = () => {
     navigate(`/post/${id}/edit`);
   };
 
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchLikeStatus = async () => {
+      try {
+        const data = await getLikeStatus(id);
+        setLikeCount(data.count);
+        setLiked(!!user && data.liked);
+      } catch (err) {
+        setLiked(false);
+      } finally {
+        setLoadingLike(false);
+      }
+    };
+
+    fetchLikeStatus();
+  }, [id, user]);
+
+  if (!post) return <p>找不到文章</p>;
   const isEdited = post.createdAt !== post.updatedAt;
+
+  const handleLike = async () => {
+    if (loadingLike || !id) return;
+
+    if (!isLoggedIn) {
+      alert('請先登入才能按讚');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const data = await toggleLike(id!);
+      setLiked(data.liked);
+      setLikeCount(data.count);
+    } catch (err) {
+      alert('操作失敗');
+    }
+  };
 
   return (
   <div
@@ -110,6 +154,33 @@ const PostDetail: React.FC = () => {
               更新日期：{formatDate(post.updatedAt)}
             </span>
           )}
+        </div>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button
+            data-testid="like-button"
+            onClick={handleLike}
+            disabled={loadingLike}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '999px',
+              border: '1px solid #ddd',
+              cursor: loadingLike ? 'not-allowed' : 'pointer',
+              backgroundColor: liked ? '#ffe6e6' : '#f5f5f5',
+              color: liked ? '#e74c3c' : '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: '0.2s',
+            }}
+          >
+            {liked ? (
+              <FaHeart color="#e74c3c" />
+              ) : (
+              <FaRegHeart />
+            )}
+
+            <span>{likeCount}</span>
+          </button>
         </div>
       </div>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />

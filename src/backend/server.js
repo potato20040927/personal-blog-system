@@ -51,6 +51,15 @@ db.serialize(() => {
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  db.run(`
+  CREATE TABLE IF NOT EXISTS likes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    post_id INTEGER NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, post_id)
+  )
+`);
 });
 
 
@@ -249,6 +258,115 @@ app.post('/posts/:id/delete', authMiddleware, adminOnly, (req, res) => {
       res.json({ message: 'Deleted' });
     });
   });
+});
+
+
+// LIKE
+app.post('/posts/:id/like', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  const postId = req.params.id;
+
+  db.get(
+    `SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?`,
+    [userId, postId],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // 已存在 → unlike
+      if (row) {
+        db.run(
+          `DELETE FROM likes WHERE user_id = ? AND post_id = ?`,
+          [userId, postId],
+          function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // 回傳最新 count
+            db.get(
+              `SELECT COUNT(*) as count FROM likes WHERE post_id = ?`,
+              [postId],
+              (err, countRow) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                res.json({
+                  liked: false,
+                  count: countRow.count
+                });
+              }
+            );
+          }
+        );
+      } else {
+        // 不存在 → like
+        db.run(
+          `INSERT INTO likes (user_id, post_id) VALUES (?, ?)`,
+          [userId, postId],
+          function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+
+            db.get(
+              `SELECT COUNT(*) as count FROM likes WHERE post_id = ?`,
+              [postId],
+              (err, countRow) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                res.json({
+                  liked: true,
+                  count: countRow.count
+                });
+              }
+            );
+          }
+        );
+      }
+    }
+  );
+});
+
+
+// GET number of likes of a post and current user state
+app.get('/posts/:id/like-status', (req, res) => {
+  const postId = req.params.id;
+
+  const authHeader = req.headers.authorization;
+  let userId = null;
+
+  if (authHeader) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded.id;
+    } catch (err) {
+      userId = null;
+    }
+  }
+
+  db.get(
+    `SELECT COUNT(*) as count FROM likes WHERE post_id = ?`,
+    [postId],
+    (err, countRow) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (!userId) {
+        return res.json({
+          count: countRow.count,
+          liked: false
+        });
+      }
+
+      db.get(
+        `SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?`,
+        [userId, postId],
+        (err, row) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          res.json({
+            count: countRow.count,
+            liked: !!row
+          });
+        }
+      );
+    }
+  );
 });
 
 
