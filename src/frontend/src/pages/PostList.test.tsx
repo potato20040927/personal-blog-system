@@ -15,8 +15,8 @@ vi.mock('react-router-dom', async () => {
 });
 
 const posts: Post[] = [
-  { id: 1, title: '文章1', content: '內容1' },
-  { id: 2, title: '文章2', content: '內容2' },
+  { id: 1, title: '文章1', content: '內容1', category: '旅遊', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 2, title: '文章2', content: '內容2', category: '旅遊', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 describe('PostList', () => {

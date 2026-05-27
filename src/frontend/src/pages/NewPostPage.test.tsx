@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import NewPostPage from './NewPostPage';
 import { PostsContext } from '../components/Layout';
+import { createMockPostsContext } from '../test-utils/createMockPostsContext';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -31,6 +32,11 @@ vi.mock('react-quill', () => ({
 describe('NewPostPage', () => {
   const mockSetPosts = vi.fn();
 
+  const mockContextValue = createMockPostsContext({
+    posts: [],
+    setPosts: mockSetPosts,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -41,7 +47,7 @@ describe('NewPostPage', () => {
     });
 
     render(
-      <PostsContext.Provider value={{ posts: [], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={mockContextValue}>
         <NewPostPage />
       </PostsContext.Provider>
     );
@@ -55,7 +61,7 @@ describe('NewPostPage', () => {
     });
 
     render(
-      <PostsContext.Provider value={{ posts: [], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={mockContextValue}>
         <NewPostPage />
       </PostsContext.Provider>
     );
@@ -79,7 +85,7 @@ describe('NewPostPage', () => {
     window.alert = vi.fn();
 
     render(
-      <PostsContext.Provider value={{ posts: [], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={mockContextValue}>
         <NewPostPage />
       </PostsContext.Provider>
     );
@@ -111,7 +117,7 @@ describe('NewPostPage', () => {
     window.alert = vi.fn();
 
     render(
-      <PostsContext.Provider value={{ posts: [], setPosts: mockSetPosts }}>
+      <PostsContext.Provider value={mockContextValue}>
         <NewPostPage />
       </PostsContext.Provider>
     );

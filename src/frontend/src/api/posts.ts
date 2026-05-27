@@ -39,3 +39,18 @@ export const deletePost = (id: string | number) => {
     method: 'POST',
   });
 };
+
+export const toggleLike = (id: number | string) => {
+  return apiClient<{ liked: boolean; count: number }>(
+    `/posts/${id}/like`,
+    {
+      method: 'POST',
+    }
+  );
+};
+
+export const getLikeStatus = (id: number | string) => {
+  return apiClient<{ liked: boolean; count: number }>(
+    `/posts/${id}/like-status`
+  );
+};
