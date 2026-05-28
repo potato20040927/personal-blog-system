@@ -10,6 +10,10 @@ vi.mock('../benchmark/runBenchmark', () => ({
     linearTime: 1.2,
     bigramTime: 0.3,
     speedup: 4,
+    totalPosts: 168,
+    linearResults: [
+      { id: 1, title: 'Test Post 1', content: 'Hello', category: 'News', createdAt: '2024-01-01' },
+    ],
     bigramResults: [
       { id: 1, title: 'Test Post 1', content: 'Hello', category: 'News', createdAt: '2024-01-01' },
     ],
@@ -21,9 +25,27 @@ vi.mock('../benchmark/runBenchmark', () => ({
   })),
 }));
 
+vi.mock('../benchmark/runTopKBenchmark', () => ({
+  runTopKBenchmark: vi.fn(() => ({
+    legacyTime: 10.0,
+    heapTime: 1.0,
+    speedup: 10.0,
+    heapSize: 10,
+    candidateSize: 90,
+  })),
+}));
+
 const mockContext = {
   posts: [
-    { id: 1, title: 'Test Post 1', content: 'Hello', category: 'News', createdAt: '2024-01-01' },
+    {
+      id: 1,
+      title: 'Test Post 1',
+      content: 'Hello',
+      category: 'News',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+      likeCount: 3,
+    },
   ],
   index: new Map(),
   category: '',
@@ -48,6 +70,7 @@ describe('BenchmarkPage', () => {
     expect(screen.getByText('System Performance Benchmark')).toBeDefined();
     expect(screen.getByText('1. Search Performance')).toBeDefined();
     expect(screen.getByText('2. Sort Performance')).toBeDefined();
+    expect(screen.getByText('3. Top-K Likes')).toBeDefined();
     expect(screen.getByPlaceholderText('關鍵字...')).toBeDefined();
   });
 
@@ -86,6 +109,25 @@ describe('BenchmarkPage', () => {
 
     expect(screen.getByText(/Array\.sort \(Standard\):/)).toBeDefined();
     expect(screen.getByText(/AVL Tree \(Indexed\):/)).toBeDefined();
+    expect(screen.getByText(/Speedup:/)).toBeDefined();
+  });
+
+  it('執行 Top-K 按讚排序測試後應顯示 Full Re-sort 與 Heap Update 數據', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={mockContext as any}>
+          <BenchmarkPage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    const topKButton = screen.getByText('Run Top-K');
+    fireEvent.click(topKButton);
+
+    expect(screen.getByText(/Full Re-sort \(1000 likes\):/)).toBeDefined();
+    expect(screen.getByText(/Heap Update \(1000 likes\):/)).toBeDefined();
+    expect(screen.getByText(/Top-K Heap Size:/)).toBeDefined();
+    expect(screen.getByText(/Candidate Heap Size:/)).toBeDefined();
     expect(screen.getByText(/Speedup:/)).toBeDefined();
   });
 
