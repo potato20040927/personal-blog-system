@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { PostsContext } from '../components/Layout';
 import { runBenchmark, runSortBenchmark } from '../benchmark/runBenchmark';
 import PostList from './PostList';
+import { runTopKBenchmark } from '../benchmark/runTopKBenchmark';
 
 const BenchmarkPage: React.FC = () => {
   const context = useContext(PostsContext);
@@ -12,6 +13,8 @@ const BenchmarkPage: React.FC = () => {
   const [searchResult, setSearchResult] = useState<any>(null);
   const [sortResult, setSortResult] = useState<any>(null);
 
+  const [topKResult, setTopKResult] = useState<any>(null);
+
   const handleRunSearchBenchmark = () => {
     if (!query.trim()) return;
     setSearchResult(runBenchmark(posts, query));
@@ -21,11 +24,15 @@ const BenchmarkPage: React.FC = () => {
     setSortResult(runSortBenchmark(posts));
   };
 
+  const handleRunTopKBenchmark = () => {
+    setTopKResult(runTopKBenchmark(posts));
+  };
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <h1>System Performance Benchmark</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
         
         {/* 左側：搜尋效能 (Bigram Index) */}
         <section style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '12px' }}>
@@ -41,6 +48,11 @@ const BenchmarkPage: React.FC = () => {
 
           {searchResult && (
             <div style={{ marginTop: '1rem', background: '#f9f9f9', padding: '1rem' }}>
+              <p>Total Posts: {searchResult.totalPosts}</p>
+              <p>Linear Matches: {searchResult.linearResults.length}</p>
+              <p>Bigram Matches: {searchResult.bigramResults.length}</p>
+
+              <hr />
               <p>Linear: {searchResult.linearTime.toFixed(4)} ms</p>
               <p>Bigram Index: {searchResult.bigramTime.toFixed(4)} ms</p>
               <h3 style={{ color: '#2c7be5' }}>Speedup: {searchResult.speedup.toFixed(2)}x</h3>
@@ -48,7 +60,7 @@ const BenchmarkPage: React.FC = () => {
           )}
         </section>
 
-        {/* 右側：排序效能 (AVL Tree) */}
+        {/* 中間：排序效能 (AVL Tree) */}
         <section style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '12px' }}>
           <h2>2. Sort Performance</h2>
           <p>Array.sort vs. AVL Tree Traversal</p>
@@ -59,6 +71,23 @@ const BenchmarkPage: React.FC = () => {
               <p>Array.sort (Standard): {sortResult.legacySortTime.toFixed(4)} ms</p>
               <p>AVL Tree (Indexed): {sortResult.avlSortTime.toFixed(4)} ms</p>
               <h3 style={{ color: '#2c7be5' }}>Speedup: {sortResult.sortSpeedup.toFixed(2)}x</h3>
+            </div>
+          )}
+        </section>
+
+        {/* 右側：Top-K 按讚文章排序效能 (Heap) */}
+        <section style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '12px' }}>
+          <h2>3. Top-K Likes</h2>
+          <p>Full Re-sort vs. Heap Update</p>
+          <button onClick={handleRunTopKBenchmark} style={{ width: '100%' }}>Run Top-K</button>
+
+          {topKResult && (
+            <div style={{ marginTop: '1rem', background: '#f9f9f9', padding: '1rem' }}>
+              <p>Full Re-sort (1000 likes): {topKResult.legacyTime.toFixed(4)} ms</p>
+              <p>Heap Update (1000 likes): {topKResult.heapTime.toFixed(4)} ms</p>
+              <p>Top-K Heap Size: {topKResult.heapSize}</p>
+              <p>Candidate Heap Size: {topKResult.candidateSize}</p>
+              <h3 style={{ color: '#2c7be5' }}>Speedup: {topKResult.speedup.toFixed(2)}x</h3>
             </div>
           )}
         </section>

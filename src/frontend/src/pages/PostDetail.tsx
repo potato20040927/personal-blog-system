@@ -100,6 +100,11 @@ const PostDetail: React.FC = () => {
       const data = await toggleLike(id!);
       setLiked(data.liked);
       setLikeCount(data.count);
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === Number(id) ? { ...post, likeCount: data.count } : post
+        )
+      );
     } catch (err) {
       alert('操作失敗');
     }

@@ -33,6 +33,8 @@ const mockContext = {
   setSearch: vi.fn(),
   index: new Map(),
   setIndex: vi.fn(),
+  sortBy: 'updated-desc',
+  setSortBy: vi.fn(),
 };
 
 describe('Header', () => {

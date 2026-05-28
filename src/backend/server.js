@@ -23,6 +23,32 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 app.use(cors());
 app.use(bodyParser.json());
 
+const sseClients = new Set();
+
+function broadcastSSE(event, data) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  sseClients.forEach((client) => {
+    client.write(payload);
+  });
+}
+
+app.get('/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+
+  res.flushHeaders();
+  res.write('retry: 10000\n\n');
+
+  sseClients.add(res);
+
+  req.on('close', () => {
+    sseClients.delete(res);
+  });
+});
+
 const db = new sqlite3.Database('./db.sqlite', (err) => {
   if (err) {
     console.error('無法開啟資料庫', err.message);
@@ -151,13 +177,23 @@ app.post('/auth/login', (req, res) => {
 // GET all posts
 app.get('/posts', (req, res) => {
   const category = req.query.category;
-  let sql = 'SELECT * FROM posts';
+
+  let sql = `
+    SELECT 
+      posts.*,
+      COUNT(likes.id) AS likeCount
+    FROM posts
+    LEFT JOIN likes ON posts.id = likes.post_id
+  `;
+
   const params = [];
 
   if (category) {
-    sql += ' WHERE category = ?';
+    sql += ' WHERE posts.category = ?';
     params.push(category);
   }
+
+  sql += ' GROUP BY posts.id';
 
   db.all(sql, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -169,7 +205,15 @@ app.get('/posts', (req, res) => {
 // GET single post
 app.get('/posts/:id', (req, res) => {
   const id = req.params.id;
-  db.get('SELECT * FROM posts WHERE id = ?', [id], (err, row) => {
+  db.get(`
+    SELECT
+      posts.*,
+      COUNT(likes.id) AS likeCount
+    FROM posts
+    LEFT JOIN likes ON posts.id = likes.post_id
+    WHERE posts.id = ?
+    GROUP BY posts.id
+  `, [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
@@ -192,9 +236,18 @@ app.post('/posts', authMiddleware, adminOnly, (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
 
       db.get(
-        `SELECT * FROM posts WHERE id = ?`,
+        `
+        SELECT
+          posts.*,
+          COUNT(likes.id) AS likeCount
+        FROM posts
+        LEFT JOIN likes ON posts.id = likes.post_id
+        WHERE posts.id = ?
+        GROUP BY posts.id
+        `,
         [this.lastID],
         (err, row) => {
+          if (err) return res.status(500).json({ error: err.message });
           res.status(201).json(row);
         }
       );
@@ -220,9 +273,20 @@ app.put('/posts/:id', authMiddleware, adminOnly, (req, res) => {
         return res.status(404).json({ error: 'Not found' });
 
       db.get(
-        'SELECT * FROM posts WHERE id = ?',
+        `
+        SELECT
+          posts.*,
+          COUNT(likes.id) AS likeCount
+        FROM posts
+        LEFT JOIN likes ON posts.id = likes.post_id
+        WHERE posts.id = ?
+        GROUP BY posts.id
+        `,
         [req.params.id],
-        (err, row) => res.json(row)
+        (err, row) => {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json(row);
+        }
       );
     }
   );
@@ -291,6 +355,7 @@ app.post('/posts/:id/like', authMiddleware, (req, res) => {
                   liked: false,
                   count: countRow.count
                 });
+                broadcastSSE('postLikeUpdated', { id: Number(postId), likeCount: countRow.count });
               }
             );
           }
@@ -313,6 +378,7 @@ app.post('/posts/:id/like', authMiddleware, (req, res) => {
                   liked: true,
                   count: countRow.count
                 });
+                broadcastSSE('postLikeUpdated', { id: Number(postId), likeCount: countRow.count });
               }
             );
           }

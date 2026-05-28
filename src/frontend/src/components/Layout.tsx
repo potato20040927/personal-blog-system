@@ -5,6 +5,8 @@ import type { Post } from './PostCard';
 import { getPosts } from '../api/posts';
 import { buildBigramIndex } from '../utils/bigramIndex';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export const PostsContext = createContext<{
   posts: Post[];
   setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
@@ -37,6 +39,38 @@ const Layout: React.FC = () => {
     };
 
     fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    const eventSource = new EventSource(`${API_BASE_URL}/events`);
+
+    const handlePostLikeUpdated = (event: MessageEvent) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (!payload || typeof payload.id !== 'number') return;
+
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === payload.id
+              ? { ...post, likeCount: payload.likeCount }
+              : post
+          )
+        );
+      } catch (error) {
+        console.error('Failed to parse SSE payload:', error);
+      }
+    };
+
+    eventSource.addEventListener('postLikeUpdated', handlePostLikeUpdated);
+
+    eventSource.onerror = (err) => {
+      console.error('SSE connection error:', err);
+    };
+
+    return () => {
+      eventSource.removeEventListener('postLikeUpdated', handlePostLikeUpdated);
+      eventSource.close();
+    };
   }, []);
 
   return (
