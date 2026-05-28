@@ -15,13 +15,9 @@ vi.mock('../context/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const mockDeletePost = vi.fn();
-vi.mock('../api/posts', () => ({
-  deletePost: (...args: any[]) => mockDeletePost(...args),
-}));
-
 const mockGetLikeStatus = vi.fn();
 const mockToggleLike = vi.fn();
+const mockDeletePost = vi.fn();
 
 vi.mock('../api/posts', () => ({
   deletePost: (...args: any[]) => mockDeletePost(...args),

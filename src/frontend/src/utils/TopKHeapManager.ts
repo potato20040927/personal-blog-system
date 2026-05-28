@@ -3,10 +3,18 @@ import type { Post } from '../components/PostCard';
 export class TopKHeapManager {
   private heap: Post[] = [];
   private indexMap: Map<number, number> = new Map();
+  private postsById: Map<number, Post> = new Map();
   private k: number;
 
   constructor(k: number = 10) {
     this.k = k;
+  }
+
+  private normalizePost(post: Post): Post {
+    return {
+      ...post,
+      likeCount: Number.isFinite(post.likeCount) ? post.likeCount : 0,
+    };
   }
 
   // =========================
@@ -77,27 +85,30 @@ export class TopKHeapManager {
   }
 
   // =========================
-  // rebuild (initial sync only)
+  // rebuild from the current full post set
   // =========================
   build(posts: Post[]) {
+    this.postsById.clear();
+    posts.forEach(post => {
+      const normalizedPost = this.normalizePost(post);
+      this.postsById.set(normalizedPost.id, normalizedPost);
+    });
+    this.rebuildHeap();
+  }
+
+  private rebuildHeap() {
     this.heap = [];
     this.indexMap.clear();
 
-    for (const post of posts) {
-      this.insert(post);
+    for (const post of this.postsById.values()) {
+      this.insertIntoHeap(post);
     }
   }
 
   // =========================
-  // INSERT (O log K)
+  // INSERT into heap only (O log K)
   // =========================
-  insert(post: Post) {
-    // if already in heap → treat as update
-    if (this.indexMap.has(post.id)) {
-      this.update(post);
-      return;
-    }
-
+  private insertIntoHeap(post: Post) {
     // heap not full
     if (this.heap.length < this.k) {
       this.heap.push(post);
@@ -122,47 +133,29 @@ export class TopKHeapManager {
   }
 
   // =========================
-  // UPDATE (O log K)
+  // INSERT post into tracked set and rebuild Top K
   // =========================
-  update(post: Post) {
-    const i = this.indexMap.get(post.id);
-
-    // already in heap
-    if (i !== undefined) {
-      this.heap[i] = post;
-
-      this.heapifyDown(i);
-      this.heapifyUp(i);
-
-      return;
-    }
-
-    // not in heap → try insert
-    this.insert(post);
+  insert(post: Post) {
+    const normalizedPost = this.normalizePost(post);
+    this.postsById.set(normalizedPost.id, normalizedPost);
+    this.rebuildHeap();
   }
 
   // =========================
-  // REMOVE (O log K)
+  // UPDATE tracked post and rebuild Top K from all known posts
+  // =========================
+  update(post: Post) {
+    const normalizedPost = this.normalizePost(post);
+    this.postsById.set(normalizedPost.id, normalizedPost);
+    this.rebuildHeap();
+  }
+
+  // =========================
+  // REMOVE tracked post and rebuild Top K
   // =========================
   remove(post: Post) {
-    const i = this.indexMap.get(post.id);
-    if (i === undefined) return;
-
-    const last = this.heap.length - 1;
-
-    this.swap(i, last);
-
-    const removed = this.heap.pop();
-    if (!removed) return;
-
-    this.indexMap.delete(removed.id);
-
-    // fix moved node
-    if (i < this.heap.length) {
-      this.indexMap.set(this.heap[i].id, i);
-      this.heapifyDown(i);
-      this.heapifyUp(i);
-    }
+    this.postsById.delete(post.id);
+    this.rebuildHeap();
   }
 
   // =========================

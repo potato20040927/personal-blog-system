@@ -28,6 +28,7 @@ const HomePage: React.FC = () => {
   const topKManager = useRef(new TopKHeapManager(10)).current;
 
   const [treeVersion, setTreeVersion] = useState(0);
+  const [topKVersion, setTopKVersion] = useState(0);
   const prevPostsRef = useRef<any[]>([]);
 
   useEffect(() => {
@@ -69,9 +70,9 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     if (!posts) return;
-    posts.forEach(p => topKManager.update(p));
-
-  }, [posts]);
+    topKManager.build(posts);
+    setTopKVersion(v => v + 1);
+  }, [posts, topKManager]);
 
   const sortedPosts = useMemo(() => {
     if (posts.length === 0) return [];
@@ -84,7 +85,7 @@ const HomePage: React.FC = () => {
       case 'likes-desc':   return topKManager.getTopK();
       default:             return indexManager.getCreatedDesc();
     }
-  }, [sortBy, indexManager, treeVersion, posts.length]);
+  }, [sortBy, indexManager, treeVersion, topKVersion, posts.length]);
 
   const finalDisplayPosts = useMemo(() => {
     let result = sortedPosts;
