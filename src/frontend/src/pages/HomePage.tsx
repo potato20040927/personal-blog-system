@@ -30,6 +30,7 @@ const HomePage: React.FC = () => {
   const [treeVersion, setTreeVersion] = useState(0);
   const [topKVersion, setTopKVersion] = useState(0);
   const prevPostsRef = useRef<any[]>([]);
+  const prevTopKPostsRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!posts) return;
@@ -70,8 +71,39 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     if (!posts) return;
-    topKManager.build(posts);
-    setTopKVersion(v => v + 1);
+
+    const prevPosts = prevTopKPostsRef.current;
+    let needsUpdate = false;
+
+    if (posts.length > 0 && prevPosts.length === 0 && topKManager.size() === 0) {
+      topKManager.build(posts);
+      needsUpdate = true;
+    } else if (posts !== prevPosts) {
+      const added = posts.filter(p => !prevPosts.find(prev => prev.id === p.id));
+      const removed = prevPosts.filter(prev => !posts.find(p => p.id === prev.id));
+      const updated = posts.filter(p => {
+        const prev = prevPosts.find(prev => prev.id === p.id);
+        return prev && (
+          prev.likeCount !== p.likeCount ||
+          prev.updatedAt !== p.updatedAt ||
+          prev.title !== p.title ||
+          prev.content !== p.content ||
+          prev.category !== p.category
+        );
+      });
+
+      added.forEach(p => topKManager.insert(p));
+      removed.forEach(p => topKManager.remove(p));
+      updated.forEach(p => topKManager.update(p));
+
+      needsUpdate = added.length > 0 || removed.length > 0 || updated.length > 0;
+    }
+
+    if (needsUpdate) {
+      setTopKVersion(v => v + 1);
+    }
+
+    prevTopKPostsRef.current = posts;
   }, [posts, topKManager]);
 
   const sortedPosts = useMemo(() => {

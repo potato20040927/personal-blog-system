@@ -1,8 +1,13 @@
 import type { Post } from '../components/PostCard';
 
+type HeapLocation = 'top' | 'rest';
+
 export class TopKHeapManager {
-  private heap: Post[] = [];
-  private indexMap: Map<number, number> = new Map();
+  private topHeap: Post[] = [];
+  private restHeap: Post[] = [];
+  private topIndexMap: Map<number, number> = new Map();
+  private restIndexMap: Map<number, number> = new Map();
+  private locationById: Map<number, HeapLocation> = new Map();
   private postsById: Map<number, Post> = new Map();
   private k: number;
 
@@ -17,9 +22,6 @@ export class TopKHeapManager {
     };
   }
 
-  // =========================
-  // helper: index
-  // =========================
   private parent(i: number) {
     return Math.floor((i - 1) / 2);
   }
@@ -32,141 +34,254 @@ export class TopKHeapManager {
     return i * 2 + 2;
   }
 
-  // =========================
-  // swap (IMPORTANT: sync map)
-  // =========================
-  private swap(i: number, j: number) {
-    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
-
-    this.indexMap.set(this.heap[i].id, i);
-    this.indexMap.set(this.heap[j].id, j);
+  private isWorseTopCandidate(a: Post, b: Post) {
+    if (a.likeCount !== b.likeCount) return a.likeCount < b.likeCount;
+    return a.id > b.id;
   }
 
-  // =========================
-  // heapify up (min heap by likeCount)
-  // =========================
-  private heapifyUp(i: number) {
-    while (
-      i > 0 &&
-      this.heap[this.parent(i)].likeCount > this.heap[i].likeCount
-    ) {
-      this.swap(i, this.parent(i));
-      i = this.parent(i);
+  private isBetterRestCandidate(a: Post, b: Post) {
+    if (a.likeCount !== b.likeCount) return a.likeCount > b.likeCount;
+    return a.id < b.id;
+  }
+
+  private sortByLikesDesc(a: Post, b: Post) {
+    if (a.likeCount !== b.likeCount) return b.likeCount - a.likeCount;
+    return a.id - b.id;
+  }
+
+  private swap(heap: Post[], indexMap: Map<number, number>, i: number, j: number) {
+    [heap[i], heap[j]] = [heap[j], heap[i]];
+    indexMap.set(heap[i].id, i);
+    indexMap.set(heap[j].id, j);
+  }
+
+  private heapifyUp(
+    heap: Post[],
+    indexMap: Map<number, number>,
+    i: number,
+    shouldComeBefore: (a: Post, b: Post) => boolean
+  ) {
+    while (i > 0 && shouldComeBefore(heap[i], heap[this.parent(i)])) {
+      const parent = this.parent(i);
+      this.swap(heap, indexMap, i, parent);
+      i = parent;
     }
   }
 
-  // =========================
-  // heapify down
-  // =========================
-  private heapifyDown(i: number) {
-    let smallest = i;
-
+  private heapifyDown(
+    heap: Post[],
+    indexMap: Map<number, number>,
+    i: number,
+    shouldComeBefore: (a: Post, b: Post) => boolean
+  ) {
+    let selected = i;
     const l = this.left(i);
     const r = this.right(i);
 
-    if (
-      l < this.heap.length &&
-      this.heap[l].likeCount < this.heap[smallest].likeCount
-    ) {
-      smallest = l;
+    if (l < heap.length && shouldComeBefore(heap[l], heap[selected])) {
+      selected = l;
     }
 
-    if (
-      r < this.heap.length &&
-      this.heap[r].likeCount < this.heap[smallest].likeCount
-    ) {
-      smallest = r;
+    if (r < heap.length && shouldComeBefore(heap[r], heap[selected])) {
+      selected = r;
     }
 
-    if (smallest !== i) {
-      this.swap(i, smallest);
-      this.heapifyDown(smallest);
+    if (selected !== i) {
+      this.swap(heap, indexMap, i, selected);
+      this.heapifyDown(heap, indexMap, selected, shouldComeBefore);
     }
   }
 
-  // =========================
-  // rebuild from the current full post set
-  // =========================
-  build(posts: Post[]) {
-    this.postsById.clear();
-    posts.forEach(post => {
-      const normalizedPost = this.normalizePost(post);
-      this.postsById.set(normalizedPost.id, normalizedPost);
-    });
-    this.rebuildHeap();
+  private pushTop(post: Post) {
+    this.topHeap.push(post);
+    const i = this.topHeap.length - 1;
+    this.topIndexMap.set(post.id, i);
+    this.locationById.set(post.id, 'top');
+    this.heapifyUp(this.topHeap, this.topIndexMap, i, this.isWorseTopCandidate);
   }
 
-  private rebuildHeap() {
-    this.heap = [];
-    this.indexMap.clear();
+  private pushRest(post: Post) {
+    this.restHeap.push(post);
+    const i = this.restHeap.length - 1;
+    this.restIndexMap.set(post.id, i);
+    this.locationById.set(post.id, 'rest');
+    this.heapifyUp(this.restHeap, this.restIndexMap, i, this.isBetterRestCandidate);
+  }
 
-    for (const post of this.postsById.values()) {
-      this.insertIntoHeap(post);
+  private removeAt(
+    heap: Post[],
+    indexMap: Map<number, number>,
+    index: number,
+    shouldComeBefore: (a: Post, b: Post) => boolean
+  ) {
+    const removed = heap[index];
+    const last = heap.pop();
+
+    indexMap.delete(removed.id);
+    this.locationById.delete(removed.id);
+
+    if (index < heap.length && last) {
+      heap[index] = last;
+      indexMap.set(last.id, index);
+      this.heapifyDown(heap, indexMap, index, shouldComeBefore);
+      this.heapifyUp(heap, indexMap, index, shouldComeBefore);
+    }
+
+    return removed;
+  }
+
+  private removeFromTop(id: number) {
+    const index = this.topIndexMap.get(id);
+    if (index === undefined) return null;
+    return this.removeAt(this.topHeap, this.topIndexMap, index, this.isWorseTopCandidate);
+  }
+
+  private removeFromRest(id: number) {
+    const index = this.restIndexMap.get(id);
+    if (index === undefined) return null;
+    return this.removeAt(this.restHeap, this.restIndexMap, index, this.isBetterRestCandidate);
+  }
+
+  private updateTop(post: Post) {
+    const index = this.topIndexMap.get(post.id);
+    if (index === undefined) return;
+
+    this.topHeap[index] = post;
+    this.heapifyDown(this.topHeap, this.topIndexMap, index, this.isWorseTopCandidate);
+    const nextIndex = this.topIndexMap.get(post.id);
+    if (nextIndex !== undefined) {
+      this.heapifyUp(this.topHeap, this.topIndexMap, nextIndex, this.isWorseTopCandidate);
     }
   }
 
-  // =========================
-  // INSERT into heap only (O log K)
-  // =========================
-  private insertIntoHeap(post: Post) {
-    // heap not full
-    if (this.heap.length < this.k) {
-      this.heap.push(post);
-      const i = this.heap.length - 1;
+  private updateRest(post: Post) {
+    const index = this.restIndexMap.get(post.id);
+    if (index === undefined) return;
 
-      this.indexMap.set(post.id, i);
-      this.heapifyUp(i);
+    this.restHeap[index] = post;
+    this.heapifyDown(this.restHeap, this.restIndexMap, index, this.isBetterRestCandidate);
+    const nextIndex = this.restIndexMap.get(post.id);
+    if (nextIndex !== undefined) {
+      this.heapifyUp(this.restHeap, this.restIndexMap, nextIndex, this.isBetterRestCandidate);
+    }
+  }
+
+  private rebalance() {
+    if (this.k <= 0) {
+      while (this.topHeap.length > 0) {
+        const post = this.removeFromTop(this.topHeap[0].id);
+        if (post) this.pushRest(post);
+      }
       return;
     }
 
-    // not in top K
-    if (post.likeCount <= this.heap[0].likeCount) return;
+    while (this.topHeap.length < this.k && this.restHeap.length > 0) {
+      const post = this.removeFromRest(this.restHeap[0].id);
+      if (post) this.pushTop(post);
+    }
 
-    // replace root (min)
-    const removed = this.heap[0];
-    this.indexMap.delete(removed.id);
+    while (this.topHeap.length > this.k) {
+      const post = this.removeFromTop(this.topHeap[0].id);
+      if (post) this.pushRest(post);
+    }
 
-    this.heap[0] = post;
-    this.indexMap.set(post.id, 0);
+    while (
+      this.topHeap.length > 0 &&
+      this.restHeap.length > 0 &&
+      this.isBetterRestCandidate(this.restHeap[0], this.topHeap[0])
+    ) {
+      const topPost = this.removeFromTop(this.topHeap[0].id);
+      const restPost = this.removeFromRest(this.restHeap[0].id);
 
-    this.heapifyDown(0);
+      if (topPost) this.pushRest(topPost);
+      if (restPost) this.pushTop(restPost);
+    }
   }
 
-  // =========================
-  // INSERT post into tracked set and rebuild Top K
-  // =========================
+  build(posts: Post[]) {
+    this.topHeap = [];
+    this.restHeap = [];
+    this.topIndexMap.clear();
+    this.restIndexMap.clear();
+    this.locationById.clear();
+    this.postsById.clear();
+
+    posts.forEach((post) => this.insert(post));
+  }
+
   insert(post: Post) {
     const normalizedPost = this.normalizePost(post);
+
+    if (this.postsById.has(normalizedPost.id)) {
+      this.update(normalizedPost);
+      return;
+    }
+
     this.postsById.set(normalizedPost.id, normalizedPost);
-    this.rebuildHeap();
+
+    if (this.topHeap.length < this.k) {
+      this.pushTop(normalizedPost);
+    } else if (
+      this.topHeap.length > 0 &&
+      this.isBetterRestCandidate(normalizedPost, this.topHeap[0])
+    ) {
+      const demoted = this.removeFromTop(this.topHeap[0].id);
+      if (demoted) this.pushRest(demoted);
+      this.pushTop(normalizedPost);
+    } else {
+      this.pushRest(normalizedPost);
+    }
+
+    this.rebalance();
   }
 
-  // =========================
-  // UPDATE tracked post and rebuild Top K from all known posts
-  // =========================
   update(post: Post) {
     const normalizedPost = this.normalizePost(post);
+
+    if (!this.postsById.has(normalizedPost.id)) {
+      this.insert(normalizedPost);
+      return;
+    }
+
     this.postsById.set(normalizedPost.id, normalizedPost);
-    this.rebuildHeap();
+
+    const location = this.locationById.get(normalizedPost.id);
+    if (location === 'top') {
+      this.updateTop(normalizedPost);
+    } else if (location === 'rest') {
+      this.updateRest(normalizedPost);
+    } else {
+      this.insert(normalizedPost);
+      return;
+    }
+
+    this.rebalance();
   }
 
-  // =========================
-  // REMOVE tracked post and rebuild Top K
-  // =========================
   remove(post: Post) {
-    this.postsById.delete(post.id);
-    this.rebuildHeap();
+    const id = post.id;
+    const location = this.locationById.get(id);
+
+    this.postsById.delete(id);
+
+    if (location === 'top') {
+      this.removeFromTop(id);
+    } else if (location === 'rest') {
+      this.removeFromRest(id);
+    }
+
+    this.rebalance();
   }
 
-  // =========================
-  // OUTPUT Top K (sorted desc)
-  // =========================
   getTopK(): Post[] {
-    return [...this.heap].sort((a, b) => b.likeCount - a.likeCount);
+    return [...this.topHeap].sort((a, b) => this.sortByLikesDesc(a, b));
   }
 
-  // debug helper
   size() {
-    return this.heap.length;
+    return this.topHeap.length;
+  }
+
+  candidateSize() {
+    return this.restHeap.length;
   }
 }

@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter, BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import HomePage from './HomePage';

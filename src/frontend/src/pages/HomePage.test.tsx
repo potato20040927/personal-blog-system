@@ -337,6 +337,18 @@ describe('TopKHeapManager - 按讚功能單元測試', () => {
       expect(topK.map(p => p.id)).not.toContain(3);
     });
 
+    it('應該能在刪除Top K文章後從候選heap補位', () => {
+      const manager3 = new TopKHeapManager(3);
+      manager3.build(posts);
+
+      manager3.remove(posts[4]);
+
+      const topK = manager3.getTopK();
+      expect(topK.map(p => p.id)).toEqual([2, 3, 1]);
+      expect(manager3.size()).toBe(3);
+      expect(manager3.candidateSize()).toBe(1);
+    });
+
     it('應該能通過update將新文章加入top K', () => {
       const manager3 = new TopKHeapManager(3);
       manager3.build(posts.slice(0, 3));
@@ -350,6 +362,17 @@ describe('TopKHeapManager - 按讚功能單元測試', () => {
       topK = manager3.getTopK();
       expect(topK.map(p => p.id)).toContain(4);
       expect(topK).toHaveLength(3);
+    });
+
+    it('應該能讓候選heap中的文章按讚增加後升進Top K', () => {
+      const manager3 = new TopKHeapManager(3);
+      manager3.build(posts);
+
+      manager3.update({ ...posts[3], likeCount: 100 });
+
+      const topK = manager3.getTopK();
+      expect(topK.map(p => p.id)).toEqual([4, 5, 2]);
+      expect(topK.map(p => p.id)).not.toContain(3);
     });
 
     it('應該能通過多次update正確維護heap結構', () => {
@@ -378,8 +401,8 @@ describe('TopKHeapManager - 按讚功能單元測試', () => {
     });
   });
 
-  describe('性能測試: Update vs Rebuild', () => {
-    it('應該能在O(log K)時間內完成單個update', () => {
+  describe('性能測試: Incremental Heap Update', () => {
+    it('應該能快速完成多次heap update', () => {
       manager.build(posts);
       
       const startTime = performance.now();
