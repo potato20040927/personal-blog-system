@@ -78,14 +78,46 @@ db.serialize(() => {
     )
   `);
   db.run(`
-  CREATE TABLE IF NOT EXISTS likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    post_id INTEGER NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, post_id)
-  )
-`);
+    CREATE TABLE IF NOT EXISTS likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      post_id INTEGER NOT NULL,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, post_id)
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.all(`PRAGMA table_info(comments)`, (err, columns) => {
+    if (err) {
+      console.error('無法檢查 comments 資料表', err.message);
+      return;
+    }
+
+    const hasUpdatedAt = columns.some((column) => column.name === 'updatedAt');
+    if (!hasUpdatedAt) {
+      db.run(
+        `ALTER TABLE comments ADD COLUMN updatedAt DATETIME`,
+        (alterErr) => {
+          if (alterErr) {
+            console.error('無法新增 comments.updatedAt 欄位', alterErr.message);
+            return;
+          }
+
+          db.run(`UPDATE comments SET updatedAt = createdAt WHERE updatedAt IS NULL`);
+        }
+      );
+    }
+  });
 });
 
 
@@ -429,6 +461,150 @@ app.get('/posts/:id/like-status', (req, res) => {
             count: countRow.count,
             liked: !!row
           });
+        }
+      );
+    }
+  );
+});
+
+
+
+app.get('/posts/:id/comments', (req, res) => {
+  const postId = req.params.id;
+
+  db.all(
+    `
+    SELECT 
+      comments.*,
+      users.username
+    FROM comments
+    LEFT JOIN users ON comments.user_id = users.id
+    WHERE post_id = ?
+    ORDER BY createdAt ASC
+    `,
+    [postId],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+
+app.post('/posts/:id/comments', authMiddleware, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Empty comment' });
+  }
+
+  db.run(
+    `
+    INSERT INTO comments (post_id, user_id, content, updatedAt)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    `,
+    [postId, userId, content.trim()],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      db.get(
+        `
+        SELECT 
+          comments.*,
+          users.username
+        FROM comments
+        LEFT JOIN users ON comments.user_id = users.id
+        WHERE comments.id = ?
+        `,
+        [this.lastID],
+        (err, row) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          res.status(201).json(row);
+        }
+      );
+    }
+  );
+});
+
+
+app.put('/comments/:id', authMiddleware, (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.user.id;
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Empty comment' });
+  }
+
+  db.get(
+    `SELECT * FROM comments WHERE id = ?`,
+    [commentId],
+    (err, comment) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!comment) return res.status(404).json({ error: 'Not found' });
+
+      if (comment.user_id !== userId) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      db.run(
+        `
+        UPDATE comments
+        SET content = ?, updatedAt = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `,
+        [content.trim(), commentId],
+        function (err) {
+          if (err) return res.status(500).json({ error: err.message });
+
+          db.get(
+            `
+            SELECT
+              comments.*,
+              users.username
+            FROM comments
+            LEFT JOIN users ON comments.user_id = users.id
+            WHERE comments.id = ?
+            `,
+            [commentId],
+            (err, row) => {
+              if (err) return res.status(500).json({ error: err.message });
+              res.json(row);
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+
+app.delete('/comments/:id', authMiddleware, (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.user.id;
+
+  db.get(
+    `SELECT * FROM comments WHERE id = ?`,
+    [commentId],
+    (err, comment) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!comment) return res.status(404).json({ error: 'Not found' });
+
+      // 只能刪自己的
+      if (comment.user_id !== userId) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      db.run(
+        `DELETE FROM comments WHERE id = ?`,
+        [commentId],
+        function (err) {
+          if (err) return res.status(500).json({ error: err.message });
+
+          res.json({ message: 'Deleted' });
         }
       );
     }

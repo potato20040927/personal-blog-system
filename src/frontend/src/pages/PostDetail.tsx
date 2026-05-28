@@ -6,6 +6,7 @@ import { useContext } from 'react';
 import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import CommentSection from '../components/comments/CommentSection';
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -189,6 +190,7 @@ const PostDetail: React.FC = () => {
         </div>
       </div>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
+      <CommentSection postId={post.id} />
     </div>
   </div>
 );
