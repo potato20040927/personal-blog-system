@@ -137,35 +137,14 @@ Benchmark pages are included in the frontend to compare optimized approaches aga
 
 ### How to Run the Project
 
-Install and run the backend:
+Install backend dependencies:
 
 ```bash
 cd src/backend
 npm install
-node server.js
 ```
 
-The backend runs at:
-
-```bash
-http://localhost:8000
-```
-
-Install and run the frontend:
-
-```bash
-cd src/frontend
-npm install
-npm run dev
-```
-
-The frontend runs at:
-
-```bash
-http://localhost:5173
-```
-
-Backend environment variables should be placed in `src/backend/.env`:
+Create a backend environment file at `src/backend/.env`:
 
 ```bash
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -178,10 +157,49 @@ ADMIN_PASSWORD=your_admin_password
 
 Cloudinary credentials can be obtained by creating a free account at [Cloudinary](https://cloudinary.com/)
 
-Frontend environment variables may be placed in `src/frontend/.env`:
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by the seed script to create the local admin account.
+
+Seed the admin account:
+
+```bash
+node seed.js
+```
+
+Start the backend:
+
+```bash
+node server.js
+```
+
+The backend runs at:
+
+```bash
+http://localhost:8000
+```
+
+In a separate terminal, install frontend dependencies:
+
+```bash
+cd src/frontend
+npm install
+```
+
+Create a frontend environment file at `src/frontend/.env`:
 
 ```bash
 VITE_API_URL=http://localhost:8000
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+The frontend runs at:
+
+```bash
+http://localhost:5173
 ```
 
 Run frontend unit and integration tests:
