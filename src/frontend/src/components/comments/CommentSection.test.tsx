@@ -112,4 +112,64 @@ describe('CommentSection', () => {
     expect(await screen.findByText('更新留言')).toBeInTheDocument();
     expect(screen.getByText('已編輯')).toBeInTheDocument();
   });
+
+  it('以雙層格式顯示留言與回覆，並可回覆第二層留言', async () => {
+    mockUseAuth.mockReturnValue({ user: { username: 'bob', role: 'user' } });
+    mockGetComments.mockResolvedValue([
+      {
+        id: 1,
+        post_id: 10,
+        user_id: 2,
+        username: 'alice',
+        content: '第一層留言',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 2,
+        post_id: 10,
+        user_id: 3,
+        parent_comment_id: 1,
+        reply_to_comment_id: 1,
+        username: 'bob',
+        content: '第一則回覆',
+        createdAt: '2026-01-01T01:00:00Z',
+      },
+    ]);
+    mockCreateComment.mockResolvedValue({
+      id: 3,
+      post_id: 10,
+      user_id: 3,
+      parent_comment_id: 1,
+      reply_to_comment_id: 2,
+      reply_to_parent_comment_id: 1,
+      username: 'bob',
+      content: '回覆 B1-1',
+      createdAt: '2026-01-01T02:00:00Z',
+    });
+
+    render(<CommentSection postId={10} />);
+
+    expect((await screen.findAllByText('B1')).length).toBeGreaterThan(0);
+    expect(screen.getByText('查看其他1則留言')).toBeInTheDocument();
+    expect(screen.queryByText('B1-1')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('查看其他1則留言'));
+
+    expect(screen.getByText('B1-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText('回覆')[1]);
+    fireEvent.change(screen.getByPlaceholderText('回覆 B1-1...'), {
+      target: { value: '回覆 B1-1' },
+    });
+    fireEvent.click(screen.getByText('送出回覆'));
+
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledWith(10, '回覆 B1-1', 2);
+    });
+
+    expect(await screen.findByText('B1-2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText('B1')[1]);
+    expect(document.getElementById('comment-1')).toHaveClass('comment-highlight');
+  });
 });
