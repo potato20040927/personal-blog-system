@@ -35,6 +35,21 @@ vi.mock('../benchmark/runTopKBenchmark', () => ({
   })),
 }));
 
+vi.mock('../benchmark/runCommentLookupBenchmark', () => ({
+  runCommentLookupBenchmark: vi.fn(() => ({
+    commentCount: 500,
+    lookupCount: 10000,
+    updateCount: 5000,
+    linearTime: 8.0,
+    hashMapTime: 0.8,
+    speedup: 10.0,
+    arrayUpdateTime: 6.0,
+    mapUpdateTime: 0.6,
+    updateSpeedup: 10.0,
+    foundCount: 10000,
+  })),
+}));
+
 const mockContext = {
   posts: [
     {
@@ -71,6 +86,8 @@ describe('BenchmarkPage', () => {
     expect(screen.getByText('1. Search Performance')).toBeDefined();
     expect(screen.getByText('2. Sort Performance')).toBeDefined();
     expect(screen.getByText('3. Top-K Likes')).toBeDefined();
+    expect(screen.getByText('4. Comment Lookup')).toBeDefined();
+    expect(screen.getByText('5. Comment Update')).toBeDefined();
     expect(screen.getByPlaceholderText('關鍵字...')).toBeDefined();
   });
 
@@ -129,6 +146,42 @@ describe('BenchmarkPage', () => {
     expect(screen.getByText(/Top-K Heap Size:/)).toBeDefined();
     expect(screen.getByText(/Candidate Heap Size:/)).toBeDefined();
     expect(screen.getByText(/Speedup:/)).toBeDefined();
+  });
+
+  it('執行留言查找測試後應顯示 Array.find 與 Map.get 數據', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={mockContext as any}>
+          <BenchmarkPage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByText('Run Comment Lookup'));
+
+    expect(screen.getAllByText(/Comments:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Lookups:/)).toBeDefined();
+    expect(screen.getByText(/Array\.find:/)).toBeDefined();
+    expect(screen.getByText(/Map\.get:/)).toBeDefined();
+    expect(screen.getByText(/Lookup Speedup:/)).toBeDefined();
+  });
+
+  it('執行留言更新測試後應顯示 Array.map 與 Map.set 數據', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={mockContext as any}>
+          <BenchmarkPage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByText('Run Comment Update'));
+
+    expect(screen.getAllByText(/Comments:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Updates:/)).toBeDefined();
+    expect(screen.getByText(/Array\.map Update:/)).toBeDefined();
+    expect(screen.getByText(/Map\.set Update:/)).toBeDefined();
+    expect(screen.getByText(/Update Speedup:/)).toBeDefined();
   });
 
   it('當輸入為空時點擊 Run 不應觸發搜尋', () => {

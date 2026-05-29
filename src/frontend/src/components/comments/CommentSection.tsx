@@ -7,6 +7,13 @@ import {
   type Comment,
 } from '../../api/comments_api';
 import { useAuth } from '../../context/AuthContext';
+import {
+  buildCommentIndex,
+  createEmptyCommentStore,
+  getRootId,
+  removeCommentFromStore,
+  upsertCommentInStore,
+} from '../../utils/commentIndex';
 
 interface CommentSectionProps {
   postId: number;
@@ -23,11 +30,11 @@ const formatDate = (dateStr?: string) => {
   });
 };
 
-const getRootId = (comment: Comment) => comment.parent_comment_id ?? comment.id;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
   const { user } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentStore, setCommentStore] = useState(createEmptyCommentStore);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,47 +48,31 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
-  const rootComments = comments.filter((comment) => !comment.parent_comment_id);
-  const repliesByRootId = comments.reduce<Record<number, Comment[]>>((groups, comment) => {
-    if (!comment.parent_comment_id) return groups;
+  const upsertComment = (nextComment: Comment) => {
+    setCommentStore((prev) => upsertCommentInStore(prev, nextComment));
+  };
 
-    const rootId = comment.parent_comment_id;
-    groups[rootId] = [...(groups[rootId] || []), comment];
-    return groups;
-  }, {});
-
-  const rootFloorById = rootComments.reduce<Record<number, number>>((map, comment, index) => {
-    map[comment.id] = index + 1;
-    return map;
-  }, {});
-
-  const replyFloorById = Object.entries(repliesByRootId).reduce<Record<number, number>>(
-    (map, [, replies]) => {
-      replies.forEach((reply, index) => {
-        map[reply.id] = index + 1;
-      });
-      return map;
-    },
-    {}
-  );
+  const removeComment = (commentId: number) => {
+    setCommentStore((prev) => removeCommentFromStore(prev, commentId));
+  };
 
   const getFloorLabel = (comment: Comment) => {
     const rootId = getRootId(comment);
-    const rootFloor = rootFloorById[rootId];
+    const rootFloor = commentStore.rootFloorById.get(rootId);
 
     if (!comment.parent_comment_id) return `B${rootFloor}`;
-    return `B${rootFloor}-${replyFloorById[comment.id]}`;
+    return `B${rootFloor}-${commentStore.replyFloorById.get(comment.id)}`;
   };
 
   const getReplyTargetLabel = (comment: Comment) => {
     if (!comment.reply_to_comment_id) return '';
 
     const targetRootId = comment.reply_to_parent_comment_id ?? comment.reply_to_comment_id;
-    const rootFloor = rootFloorById[targetRootId];
+    const rootFloor = commentStore.rootFloorById.get(targetRootId);
     if (!rootFloor) return '';
 
     if (!comment.reply_to_parent_comment_id) return `B${rootFloor}`;
-    return `B${rootFloor}-${replyFloorById[comment.reply_to_comment_id]}`;
+    return `B${rootFloor}-${commentStore.replyFloorById.get(comment.reply_to_comment_id)}`;
   };
 
   const toggleReplies = (rootId: number) => {
@@ -98,7 +89,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
   const focusComment = (commentId: number) => {
     setExpandedRootIds((prev) => {
-      const targetComment = comments.find((comment) => comment.id === commentId);
+      const targetComment = commentStore.byId.get(commentId);
       if (!targetComment?.parent_comment_id) return prev;
 
       const next = new Set(prev);
@@ -132,7 +123,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
       try {
         const data = await getComments(postId);
-        if (!cancelled) setComments(data);
+        if (!cancelled) setCommentStore(buildCommentIndex(data));
       } catch (err) {
         if (!cancelled) setError('留言載入失敗');
       } finally {
@@ -147,6 +138,50 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     };
   }, [postId]);
 
+  useEffect(() => {
+    if (typeof EventSource === 'undefined') return;
+
+    const eventSource = new EventSource(`${API_BASE_URL}/events`);
+
+    const handleCommentCreated = (event: MessageEvent) => {
+      const payload = JSON.parse(event.data);
+      if (Number(payload.postId) !== postId || !payload.comment) return;
+
+      upsertComment(payload.comment);
+      if (payload.comment.parent_comment_id) {
+        setExpandedRootIds((prev) => new Set(prev).add(payload.comment.parent_comment_id));
+      }
+    };
+
+    const handleCommentUpdated = (event: MessageEvent) => {
+      const payload = JSON.parse(event.data);
+      if (Number(payload.postId) !== postId || !payload.comment) return;
+      upsertComment(payload.comment);
+    };
+
+    const handleCommentDeleted = (event: MessageEvent) => {
+      const payload = JSON.parse(event.data);
+      if (Number(payload.postId) !== postId) return;
+
+      if (payload.softDeleted && payload.comment) {
+        upsertComment(payload.comment);
+      } else if (payload.id) {
+        removeComment(Number(payload.id));
+      }
+    };
+
+    eventSource.addEventListener('commentCreated', handleCommentCreated);
+    eventSource.addEventListener('commentUpdated', handleCommentUpdated);
+    eventSource.addEventListener('commentDeleted', handleCommentDeleted);
+
+    return () => {
+      eventSource.removeEventListener('commentCreated', handleCommentCreated);
+      eventSource.removeEventListener('commentUpdated', handleCommentUpdated);
+      eventSource.removeEventListener('commentDeleted', handleCommentDeleted);
+      eventSource.close();
+    };
+  }, [postId]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -158,7 +193,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
     try {
       const newComment = await createComment(postId, trimmedContent);
-      setComments((prev) => [...prev, newComment]);
+      upsertComment(newComment);
       setContent('');
     } catch (err) {
       setError('留言送出失敗，請稍後再試');
@@ -173,21 +208,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
     try {
       const result = await deleteComment(commentId);
-      setComments((prev) => {
-        if (!result.softDeleted) {
-          return prev.filter((comment) => comment.id !== commentId);
-        }
+      if (!result.softDeleted) {
+        removeComment(commentId);
+        return;
+      }
 
-        return prev.map((comment) =>
-          comment.id === commentId
-            ? {
-                ...comment,
-                content: '[留言已刪除]',
-                deletedAt: new Date().toISOString(),
-              }
-            : comment
-        );
-      });
+      const currentComment = commentStore.byId.get(commentId);
+      if (currentComment) {
+        upsertComment({
+          ...currentComment,
+          content: '[留言已刪除]',
+          deletedAt: new Date().toISOString(),
+        });
+      }
     } catch (err) {
       setError('留言刪除失敗');
     }
@@ -226,11 +259,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
     try {
       const updatedComment = await updateComment(commentId, trimmedContent);
-      setComments((prev) =>
-        prev.map((comment) =>
-          comment.id === commentId ? updatedComment : comment
-        )
-      );
+      upsertComment(updatedComment);
       cancelEditing();
     } catch (err) {
       setError('留言更新失敗，請稍後再試');
@@ -250,7 +279,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
     try {
       const newComment = await createComment(postId, trimmedContent, replyToCommentId);
-      setComments((prev) => [...prev, newComment]);
+      upsertComment(newComment);
       if (newComment.parent_comment_id) {
         setExpandedRootIds((prev) => new Set(prev).add(newComment.parent_comment_id!));
       }
@@ -288,7 +317,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     const isReplying = replyingToId === comment.id;
     const replyTargetLabel = getReplyTargetLabel(comment);
     const isHighlighted = highlightedCommentId === comment.id;
-    const replies = variant === 'root' ? repliesByRootId[comment.id] || [] : [];
+    const replyIds = variant === 'root' ? commentStore.repliesByRootId.get(comment.id) || [] : [];
+    const replies = replyIds
+      .map((id) => commentStore.byId.get(id))
+      .filter((reply): reply is Comment => !!reply);
     const hasReplies = replies.length > 0;
     const isExpanded = expandedRootIds.has(comment.id);
 
@@ -419,21 +451,27 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
 
       {loading ? (
         <p className="comment-empty">留言載入中...</p>
-      ) : rootComments.length === 0 ? (
+      ) : commentStore.rootIds.length === 0 ? (
         <p className="comment-empty">目前還沒有留言。</p>
       ) : (
         <ul className="comment-list">
-          {rootComments.map((comment) => (
-            <li key={comment.id} className="comment-thread">
-              <ul className="comment-thread-list">
-                {renderComment(comment, 'root')}
-                {expandedRootIds.has(comment.id) &&
-                  (repliesByRootId[comment.id] || []).map((reply) =>
-                    renderComment(reply, 'reply')
-                  )}
-              </ul>
-            </li>
-          ))}
+          {commentStore.rootIds.map((commentId) => {
+            const comment = commentStore.byId.get(commentId);
+            if (!comment) return null;
+
+            return (
+              <li key={comment.id} className="comment-thread">
+                <ul className="comment-thread-list">
+                  {renderComment(comment, 'root')}
+                  {expandedRootIds.has(comment.id) &&
+                    (commentStore.repliesByRootId.get(comment.id) || []).map((replyId) => {
+                      const reply = commentStore.byId.get(replyId);
+                      return reply ? renderComment(reply, 'reply') : null;
+                    })}
+                </ul>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

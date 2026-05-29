@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CommentSection from './CommentSection';
 
@@ -19,8 +19,28 @@ vi.mock('../../api/comments_api', () => ({
 }));
 
 describe('CommentSection', () => {
+  let eventListeners: Record<string, (event: MessageEvent) => void>;
+  let mockEventSource: {
+    addEventListener: ReturnType<typeof vi.fn>;
+    removeEventListener: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    eventListeners = {};
+    mockEventSource = {
+      addEventListener: vi.fn((event: string, handler: (event: MessageEvent) => void) => {
+        eventListeners[event] = handler;
+      }),
+      removeEventListener: vi.fn(),
+      close: vi.fn(),
+    };
+
+    globalThis.EventSource = vi.fn(function EventSourceMock() {
+      return mockEventSource;
+    }) as any;
   });
 
   it('載入並顯示留言列表', async () => {
@@ -171,5 +191,99 @@ describe('CommentSection', () => {
 
     fireEvent.click(screen.getAllByText('B1')[1]);
     expect(document.getElementById('comment-1')).toHaveClass('comment-highlight');
+  });
+
+  it('收到 commentCreated SSE 後即時新增並展開回覆', async () => {
+    mockUseAuth.mockReturnValue({ user: { username: 'bob', role: 'user' } });
+    mockGetComments.mockResolvedValue([
+      {
+        id: 1,
+        post_id: 10,
+        user_id: 2,
+        username: 'alice',
+        content: '第一層留言',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+    ]);
+
+    render(<CommentSection postId={10} />);
+
+    expect(await screen.findByText('第一層留言')).toBeInTheDocument();
+    expect(mockEventSource.addEventListener).toHaveBeenCalledWith(
+      'commentCreated',
+      expect.any(Function)
+    );
+
+    act(() => {
+      eventListeners.commentCreated({
+        data: JSON.stringify({
+          postId: 10,
+          comment: {
+            id: 2,
+            post_id: 10,
+            user_id: 3,
+            parent_comment_id: 1,
+            reply_to_comment_id: 1,
+            username: 'bob',
+            content: '即時回覆',
+            createdAt: '2026-01-01T01:00:00Z',
+          },
+        }),
+      } as MessageEvent);
+    });
+
+    expect(await screen.findByText('B1-1')).toBeInTheDocument();
+    expect(screen.getByText('即時回覆')).toBeInTheDocument();
+  });
+
+  it('收到 commentUpdated 與 commentDeleted SSE 後同步更新畫面', async () => {
+    mockUseAuth.mockReturnValue({ user: { username: 'bob', role: 'user' } });
+    mockGetComments.mockResolvedValue([
+      {
+        id: 1,
+        post_id: 10,
+        user_id: 3,
+        username: 'bob',
+        content: '原本留言',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+    ]);
+
+    render(<CommentSection postId={10} />);
+
+    expect(await screen.findByText('原本留言')).toBeInTheDocument();
+
+    act(() => {
+      eventListeners.commentUpdated({
+        data: JSON.stringify({
+          postId: 10,
+          comment: {
+            id: 1,
+            post_id: 10,
+            user_id: 3,
+            username: 'bob',
+            content: '即時更新',
+            createdAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-01-01T01:00:00Z',
+          },
+        }),
+      } as MessageEvent);
+    });
+
+    expect(await screen.findByText('即時更新')).toBeInTheDocument();
+
+    act(() => {
+      eventListeners.commentDeleted({
+        data: JSON.stringify({
+          postId: 10,
+          id: 1,
+          softDeleted: false,
+        }),
+      } as MessageEvent);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('即時更新')).not.toBeInTheDocument();
+    });
   });
 });

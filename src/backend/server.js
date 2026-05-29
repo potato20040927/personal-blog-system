@@ -100,6 +100,16 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_comments_post_parent_created
+    ON comments (post_id, parent_comment_id, createdAt, id)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_comments_reply_to
+    ON comments (reply_to_comment_id)
+  `);
+
   db.all(`PRAGMA table_info(comments)`, (err, columns) => {
     if (err) {
       console.error('無法檢查 comments 資料表', err.message);
@@ -627,6 +637,10 @@ app.post('/posts/:id/comments', authMiddleware, (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
 
             res.status(201).json(row);
+            broadcastSSE('commentCreated', {
+              postId: Number(postId),
+              comment: row,
+            });
           }
         );
       }
@@ -688,6 +702,10 @@ app.put('/comments/:id', authMiddleware, (req, res) => {
             (err, row) => {
               if (err) return res.status(500).json({ error: err.message });
               res.json(row);
+              broadcastSSE('commentUpdated', {
+                postId: Number(row.post_id),
+                comment: row,
+              });
             }
           );
         }
@@ -735,7 +753,35 @@ app.delete('/comments/:id', authMiddleware, (req, res) => {
               [commentId],
               function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                return res.json({ message: 'Deleted', softDeleted: true });
+
+                db.get(
+                  `
+                  SELECT
+                    comments.*,
+                    users.username,
+                    reply_to_comments.parent_comment_id AS reply_to_parent_comment_id,
+                    reply_to_users.username AS reply_to_username
+                  FROM comments
+                  LEFT JOIN users ON comments.user_id = users.id
+                  LEFT JOIN comments AS reply_to_comments
+                    ON comments.reply_to_comment_id = reply_to_comments.id
+                  LEFT JOIN users AS reply_to_users
+                    ON reply_to_comments.user_id = reply_to_users.id
+                  WHERE comments.id = ?
+                  `,
+                  [commentId],
+                  (err, row) => {
+                    if (err) return res.status(500).json({ error: err.message });
+
+                    res.json({ message: 'Deleted', softDeleted: true });
+                    broadcastSSE('commentDeleted', {
+                      postId: Number(row.post_id),
+                      id: Number(commentId),
+                      softDeleted: true,
+                      comment: row,
+                    });
+                  }
+                );
               }
             );
             return;
@@ -747,6 +793,11 @@ app.delete('/comments/:id', authMiddleware, (req, res) => {
             function (err) {
               if (err) return res.status(500).json({ error: err.message });
               res.json({ message: 'Deleted', softDeleted: false });
+              broadcastSSE('commentDeleted', {
+                postId: Number(comment.post_id),
+                id: Number(commentId),
+                softDeleted: false,
+              });
             }
           );
         }
