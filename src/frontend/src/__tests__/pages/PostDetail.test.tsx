@@ -18,11 +18,20 @@ vi.mock('../../context/AuthContext', () => ({
 const mockGetLikeStatus = vi.fn();
 const mockToggleLike = vi.fn();
 const mockDeletePost = vi.fn();
+const mockGetComments = vi.fn();
+const mockCreateComment = vi.fn();
 
 vi.mock('../../api/posts', () => ({
   deletePost: (...args: any[]) => mockDeletePost(...args),
   getLikeStatus: (...args: any[]) => mockGetLikeStatus(...args),
   toggleLike: (...args: any[]) => mockToggleLike(...args),
+}));
+
+vi.mock('../../api/comments_api', () => ({
+  getComments: (...args: any[]) => mockGetComments(...args),
+  createComment: (...args: any[]) => mockCreateComment(...args),
+  updateComment: vi.fn(),
+  deleteComment: vi.fn(),
 }));
 
 describe('PostDetail', () => {
@@ -44,6 +53,15 @@ describe('PostDetail', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetComments.mockResolvedValue([]);
+
+    globalThis.EventSource = vi.fn(function EventSourceMock() {
+      return {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        close: vi.fn(),
+      };
+    }) as any;
   });
 
   it('找不到文章', () => {
@@ -229,5 +247,77 @@ describe('PostDetail', () => {
     await waitFor(() => {
       expect(screen.getByTestId('like-button')).toHaveTextContent('2');
     });
+  });
+
+  it('在文章詳細頁整合顯示留言區與留言列表', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { username: 'bob', role: 'user' },
+    });
+    mockGetLikeStatus.mockResolvedValue({
+      count: 0,
+      liked: false,
+    });
+    mockGetComments.mockResolvedValue([
+      {
+        id: 10,
+        post_id: 1,
+        user_id: 2,
+        username: 'alice',
+        content: '文章頁留言',
+        createdAt: '2026-01-02T00:00:00Z',
+      },
+    ]);
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    expect(screen.getByText('測試文章')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '留言' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockGetComments).toHaveBeenCalledWith(1);
+    });
+    expect(await screen.findByText('文章頁留言')).toBeInTheDocument();
+    expect(screen.getByText('alice')).toBeInTheDocument();
+  });
+
+  it('登入使用者可以直接在文章詳細頁新增留言', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { username: 'bob', role: 'user' },
+    });
+    mockGetLikeStatus.mockResolvedValue({
+      count: 0,
+      liked: false,
+    });
+    mockGetComments.mockResolvedValue([]);
+    mockCreateComment.mockResolvedValue({
+      id: 11,
+      post_id: 1,
+      user_id: 3,
+      username: 'bob',
+      content: '從文章頁新增',
+      createdAt: '2026-01-02T00:00:00Z',
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    await screen.findByText('目前還沒有留言。');
+
+    fireEvent.change(screen.getByPlaceholderText('留下你的想法...'), {
+      target: { value: '從文章頁新增' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '送出留言' }));
+
+    await waitFor(() => {
+      expect(mockCreateComment).toHaveBeenCalledWith(1, '從文章頁新增');
+    });
+    expect(await screen.findByText('從文章頁新增')).toBeInTheDocument();
   });
 });

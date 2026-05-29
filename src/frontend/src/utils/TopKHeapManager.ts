@@ -1,4 +1,4 @@
-import type { Post } from '../components/PostCard';
+import type { Post } from '../types/post';
 
 type HeapLocation = 'top' | 'rest';
 

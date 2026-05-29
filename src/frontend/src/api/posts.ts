@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Post } from '../components/PostCard';
+import type { Post } from '../types/post';
 
 export const getPosts = () => {
   return apiClient<Post[]>('/posts');

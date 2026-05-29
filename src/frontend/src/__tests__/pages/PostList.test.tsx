@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PostList from '../../pages/PostList';
-import type { Post } from '../../components/PostCard';
+import type { Post } from '../../types/post';
 
 // mock useNavigate
 const mockNavigate = vi.fn();

@@ -5,7 +5,7 @@ import HomePage from '../../pages/HomePage';
 import { PostsContext } from '../../components/Layout';
 import { buildBigramIndex } from '../../utils/bigramIndex';
 import { TopKHeapManager } from '../../utils/TopKHeapManager';
-import type { Post } from '../../components/PostCard';
+import type { Post } from '../../types/post';
 
 // Mock AuthContext
 vi.mock('../../context/AuthContext', () => ({

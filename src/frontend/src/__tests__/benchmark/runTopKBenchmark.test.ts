@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Post } from '../../components/PostCard';
+import type { Post } from '../../types/post';
 import { runTopKBenchmark } from '../../benchmark/runTopKBenchmark';
 
 const posts: Post[] = Array.from({ length: 20 }, (_, index) => ({

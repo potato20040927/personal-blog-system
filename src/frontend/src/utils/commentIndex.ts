@@ -1,4 +1,4 @@
-import type { Comment } from '../api/comments_api';
+import type { Comment } from '../types/comment';
 
 export interface CommentIndex {
   byId: Map<number, Comment>;
