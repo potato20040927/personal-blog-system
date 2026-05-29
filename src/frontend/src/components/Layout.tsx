@@ -1,11 +1,10 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
-import type { Post } from './PostCard';
+import { API_BASE_URL } from '../api/config';
+import type { Post } from '../types/post';
 import { getPosts } from '../api/posts';
 import { buildBigramIndex } from '../utils/bigramIndex';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const PostsContext = createContext<{
   posts: Post[];

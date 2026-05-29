@@ -1,4 +1,4 @@
-import type { Comment } from '../api/comments_api';
+import type { Comment } from '../types/comment';
 import { buildCommentIndex } from '../utils/commentIndex';
 
 function measure<T>(fn: () => T, repeat = 10) {

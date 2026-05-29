@@ -1,4 +1,4 @@
-import type { Post } from '../components/PostCard';
+import type { Post } from '../types/post';
 import { TopKHeapManager } from '../utils/TopKHeapManager';
 
 function clonePosts(posts: Post[]): Post[] {

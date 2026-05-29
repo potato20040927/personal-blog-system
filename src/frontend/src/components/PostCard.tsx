@@ -1,15 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
-export interface Post {
-  id: number;
-  title: string;
-  content: string;
-  category?: string;
-  createdAt: string;
-  updatedAt: string;
-  likeCount: number;
-}
+import type { Post } from '../types/post';
+export type { Post } from '../types/post';
 
 interface PostCardProps {
   post: Post;
