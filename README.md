@@ -172,7 +172,11 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 JWT_SECRET=your_jwt_secret
+ADMIN_USERNAME=your_admin_name
+ADMIN_PASSWORD=your_admin_password
 ```
+
+Cloudinary credentials can be obtained by creating a free account at [Cloudinary](https://cloudinary.com/)
 
 Frontend environment variables may be placed in `src/frontend/.env`:
 
