@@ -1,7 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 const { initializeSchema } = require('./schema');
 
-const db = new sqlite3.Database('./db.sqlite', (err) => {
+const dbPath = process.env.DB_PATH || './db.sqlite';
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('無法開啟資料庫', err.message);
   } else {

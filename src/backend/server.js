@@ -13,7 +13,7 @@ const { adminOnly, createAuthMiddleware } = require('./middleware/auth');
 const { broadcastSSE, registerSseRoute } = require('./realtime/sse');
 
 const app = express();
-const PORT = 8000;
+const PORT = Number(process.env.PORT) || 8000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 const authMiddleware = createAuthMiddleware(JWT_SECRET);
 

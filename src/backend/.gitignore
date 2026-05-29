@@ -27,3 +27,4 @@ env
 .env
 
 db.sqlite
+db.e2e.sqlite
