@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import EditPostPage from './EditPostPage';
-import { PostsContext } from '../components/Layout';
-import { useAuth } from '../context/AuthContext';
-import { getPostById } from '../api/posts';
+import EditPostPage from '../../pages/EditPostPage';
+import { PostsContext } from '../../components/Layout';
+import { useAuth } from '../../context/AuthContext';
+import { getPostById } from '../../api/posts';
 
 // router
 const mockNavigate = vi.fn();
@@ -19,14 +19,14 @@ vi.mock('react-router-dom', async () => {
 });
 
 // auth
-vi.mock('../context/AuthContext', () => {
+vi.mock('../../context/AuthContext', () => {
   return {
     useAuth: vi.fn(),
   };
 });
 
 // API
-vi.mock('../api/posts', () => {
+vi.mock('../../api/posts', () => {
   return {
     getPostById: vi.fn(),
     updatePost: vi.fn(),

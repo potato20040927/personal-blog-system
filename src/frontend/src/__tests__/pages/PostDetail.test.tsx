@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import PostDetail from './PostDetail';
-import { PostsContext } from '../components/Layout';
+import PostDetail from '../../pages/PostDetail';
+import { PostsContext } from '../../components/Layout';
 import { createMockPostsContext } from '../test-utils/createMockPostsContext';
 
 const mockNavigate = vi.fn();
@@ -11,7 +11,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const mockUseAuth = vi.fn();
-vi.mock('../context/AuthContext', () => ({
+vi.mock('../../context/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
@@ -19,7 +19,7 @@ const mockGetLikeStatus = vi.fn();
 const mockToggleLike = vi.fn();
 const mockDeletePost = vi.fn();
 
-vi.mock('../api/posts', () => ({
+vi.mock('../../api/posts', () => ({
   deletePost: (...args: any[]) => mockDeletePost(...args),
   getLikeStatus: (...args: any[]) => mockGetLikeStatus(...args),
   toggleLike: (...args: any[]) => mockToggleLike(...args),

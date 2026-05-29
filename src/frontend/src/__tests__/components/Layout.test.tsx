@@ -1,14 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Layout from './Layout';
+import Layout from '../../components/Layout';
 
 const mockGetPosts = vi.fn();
 
-vi.mock('../api/posts', () => ({
+vi.mock('../../api/posts', () => ({
   getPosts: () => mockGetPosts(),
 }));
 
-vi.mock('./Header', () => ({
+vi.mock('../../components/Header', () => ({
   default: () => <div>Header</div>,
 }));
 

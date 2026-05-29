@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Header from './Header';
+import Header from '../../components/Header';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { PostsContext } from './Layout';
+import { PostsContext } from '../../components/Layout';
 
 // mock useNavigate
 const mockNavigate = vi.fn();
@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 // mock useAuth
-vi.mock('../context/AuthContext', async () => {
+vi.mock('../../context/AuthContext', async () => {
   return {
     useAuth: () => ({
       user: { username: 'testUser' },

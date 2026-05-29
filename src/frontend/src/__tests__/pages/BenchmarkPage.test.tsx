@@ -1,11 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import BenchmarkPage from './BenchmarkPage';
-import { PostsContext } from '../components/Layout';
+import BenchmarkPage from '../../pages/BenchmarkPage';
+import { PostsContext } from '../../components/Layout';
 
 // 1. Mock 效能測試邏輯
-vi.mock('../benchmark/runBenchmark', () => ({
+vi.mock('../../benchmark/runBenchmark', () => ({
   runBenchmark: vi.fn(() => ({
     linearTime: 1.2,
     bigramTime: 0.3,
@@ -25,7 +25,7 @@ vi.mock('../benchmark/runBenchmark', () => ({
   })),
 }));
 
-vi.mock('../benchmark/runTopKBenchmark', () => ({
+vi.mock('../../benchmark/runTopKBenchmark', () => ({
   runTopKBenchmark: vi.fn(() => ({
     legacyTime: 10.0,
     heapTime: 1.0,
@@ -35,7 +35,7 @@ vi.mock('../benchmark/runTopKBenchmark', () => ({
   })),
 }));
 
-vi.mock('../benchmark/runCommentLookupBenchmark', () => ({
+vi.mock('../../benchmark/runCommentLookupBenchmark', () => ({
   runCommentLookupBenchmark: vi.fn(() => ({
     commentCount: 500,
     lookupCount: 10000,

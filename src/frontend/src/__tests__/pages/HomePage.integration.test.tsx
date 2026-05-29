@@ -1,12 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import HomePage from './HomePage';
-import { PostsContext } from '../components/Layout';
-import Layout from '../components/Layout';
+import HomePage from '../../pages/HomePage';
+import { PostsContext } from '../../components/Layout';
+import Layout from '../../components/Layout';
 
 // mock Auth
-vi.mock('../context/AuthContext', () => ({
+vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     user: { role: 'admin' },
   }),
@@ -106,7 +106,7 @@ describe('HomePage Integration Tests', () => {
 // SSE Like Updates Integration Tests
 // ==========================================
 // Mock the API used by Layout
-vi.mock('../api/posts', () => ({
+vi.mock('../../api/posts', () => ({
   getPosts: vi.fn(() => Promise.resolve([
     {
       id: 1,

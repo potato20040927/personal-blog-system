@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CommentSection from './CommentSection';
+import CommentSection from '../../components/CommentSection';
 
 const mockUseAuth = vi.fn();
 vi.mock('../../context/AuthContext', () => ({

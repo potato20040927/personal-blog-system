@@ -1,14 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import HomePage from './HomePage';
-import { PostsContext } from '../components/Layout';
-import { buildBigramIndex } from '../utils/bigramIndex';
-import { TopKHeapManager } from '../utils/TopKHeapManager';
-import type { Post } from '../components/PostCard';
+import HomePage from '../../pages/HomePage';
+import { PostsContext } from '../../components/Layout';
+import { buildBigramIndex } from '../../utils/bigramIndex';
+import { TopKHeapManager } from '../../utils/TopKHeapManager';
+import type { Post } from '../../components/PostCard';
 
 // Mock AuthContext
-vi.mock('../context/AuthContext', () => ({
+vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     user: { role: 'admin' },
   }),

@@ -6,7 +6,7 @@ import { useContext } from 'react';
 import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
-import CommentSection from '../components/comments/CommentSection';
+import CommentSection from '../components/CommentSection';
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';

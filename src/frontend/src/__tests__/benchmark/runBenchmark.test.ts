@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runBenchmark } from './runBenchmark';
+import { runBenchmark } from '../../benchmark/runBenchmark';
 
 const mockPosts = [
   {

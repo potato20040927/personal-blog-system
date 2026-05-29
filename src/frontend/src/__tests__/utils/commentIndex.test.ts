@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Comment } from '../api/comments_api';
+import type { Comment } from '../../api/comments_api';
 import {
   buildCommentIndex,
   createEmptyCommentStore,
   removeCommentFromStore,
   upsertCommentInStore,
-} from './commentIndex';
+} from '../../utils/commentIndex';
 
 const makeComment = (overrides: Partial<Comment>): Comment => ({
   id: 1,

@@ -5,15 +5,15 @@ import {
   getComments,
   updateComment,
   type Comment,
-} from '../../api/comments_api';
-import { useAuth } from '../../context/AuthContext';
+} from '../api/comments_api';
+import { useAuth } from '../context/AuthContext';
 import {
   buildCommentIndex,
   createEmptyCommentStore,
   getRootId,
   removeCommentFromStore,
   upsertCommentInStore,
-} from '../../utils/commentIndex';
+} from '../utils/commentIndex';
 
 interface CommentSectionProps {
   postId: number;
