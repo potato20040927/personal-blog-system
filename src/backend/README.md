@@ -1,18 +1,20 @@
-# Personal Blog System (Back-end) (API)
+# Personal Blog System Backend
 
-This is a simple blog backend API built with **Node.js + Express + SQLite**, providing article management, user authentication, and image deletion functionality.
+This backend provides the API layer for the personal blog system. It is built with **Node.js**, **Express**, and **SQLite**, and supports posts, authentication, likes, nested comments, Cloudinary image cleanup, and Server-Sent Events.
 
 ---
 
-##  Features
+## Features
 
-- Article CRUD API (Create / Read / Update / Delete)
-- Simple authentication system (mock users)
-- SQLite local database
-- Cloudinary image management (auto-delete images when posts are deleted)
-- Admin permission control
-- RESTful API design
-- CORS enabled for frontend integration
+- User registration and login with JWT authentication
+- Admin-only post creation, editing, and deletion
+- Post listing and post detail APIs
+- Like and unlike API with real-time SSE updates
+- Nested comment APIs with a two-level reply model
+- Comment creation, editing, deletion, and soft deletion
+- SQLite schema initialization and lightweight migration logic
+- Cloudinary image cleanup when deleting posts
+- E2E test database seeding
 
 ---
 
@@ -21,10 +23,12 @@ This is a simple blog backend API built with **Node.js + Express + SQLite**, pro
 - Node.js
 - Express
 - SQLite3
-- Cloudinary (https://cloudinary.com/)
+- bcrypt
+- JSON Web Token
+- Cloudinary
 - dotenv
-- body-parser
 - cors
+- body-parser
 
 ---
 
@@ -32,45 +36,188 @@ This is a simple blog backend API built with **Node.js + Express + SQLite**, pro
 
 ```bash
 backend/
-├── server.js      # Main server file
-├── db.sqlite      # SQLite database
-└── .env           # Environment variables
+├── db/
+│   ├── index.js              # SQLite connection and schema initialization
+│   └── schema.js             # Table creation, indexes, and migration helpers
+├── middleware/
+│   └── auth.js               # JWT authentication and admin authorization
+├── realtime/
+│   └── sse.js                # Server-Sent Events connection and broadcast logic
+├── routes/
+│   ├── authRoutes.js         # /auth/register and /auth/login
+│   ├── commentRoutes.js      # Comment and nested reply APIs
+│   └── postRoutes.js         # Posts, likes, and post management APIs
+├── scripts/
+│   └── seedE2eDb.js          # Seed script for Playwright E2E tests
+├── server.js                 # Express app composition and server startup
+├── seed.js                   # Local seed script
+├── package.json
+└── README.md
 ```
 
+Generated local databases are ignored by Git:
+
+```bash
+db.sqlite
+db.e2e.sqlite
+```
+
+---
 
 ## Backend Setup
 
-### 1. Clone Repository
+### 1. Install Dependencies
 
 ```bash
-git clone https://github.com/potato20040927/personal-blog-system.git
 cd src/backend
-```
-
-### 2. Install Dependencies
-```bash
 npm install
 ```
 
-### 3. Environment Variables Setup
-Before starting the server, you need to create a `.env` file in the backend root directory and configure your Cloudinary credentials.
+### 2. Environment Variables
 
-You can obtain these credentials from your Cloudinary dashboard.
-
-Create a `.env` file and add the following:
+Create a `.env` file in `src/backend` and add the following:
 
 ```bash
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+JWT_SECRET=your_jwt_secret
+ADMIN_USERNAME=your_admin_name
+ADMIN_PASSWORD=your_admin_password
 ```
 
-### 4. Start Server
+`JWT_SECRET` is optional during local development because the backend has a development fallback, but it should be configured explicitly for real usage.
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by `seed.js` to create a local admin account.
+
+The backend also supports these runtime environment variables:
+
+```bash
+PORT=8000
+DB_PATH=./db.sqlite
+```
+
+These are useful for E2E testing because Playwright can start the backend with a separate database:
+
+```bash
+DB_PATH=./db.e2e.sqlite PORT=8000 node server.js
+```
+
+### 3. Start the Server
+
 ```bash
 node server.js
 ```
 
-### 4. Server Runs At
+The server runs at:
+
 ```bash
 http://localhost:8000
+```
+
+---
+
+## E2E Test Database
+
+The backend includes a seed script for the frontend Playwright tests:
+
+```bash
+npm run seed:e2e
+```
+
+This creates and seeds:
+
+```bash
+db.e2e.sqlite
+```
+
+The seed script refuses to reset databases whose path does not include `e2e`, which helps avoid accidentally deleting a development database.
+
+---
+
+## Creating an Admin Account
+
+Normal registration creates users with the `user` role by default. Admin permissions are required to create, edit, and delete posts.
+
+For local development, create an admin account with the backend seed script.
+
+First, set these values in `src/backend/.env`:
+
+```bash
+ADMIN_USERNAME=your_admin_name
+ADMIN_PASSWORD=your_admin_password
+```
+
+Then run:
+
+```bash
+cd src/backend
+node seed.js
+```
+
+The script inserts an admin user into the SQLite `users` table:
+
+```sql
+INSERT OR IGNORE INTO users (username, password_hash, role)
+VALUES (?, ?, 'admin')
+```
+
+After running the seed script, start the backend and log in through the frontend using the configured admin username and password. The account will have permission to create, edit, and delete posts.
+
+If the admin username already exists, `seed.js` uses `INSERT OR IGNORE`, so it will not overwrite the existing user's password or role.
+
+---
+
+## Main API Routes
+
+### Auth
+
+```bash
+POST /auth/register
+POST /auth/login
+```
+
+### Posts
+
+```bash
+GET    /posts
+GET    /posts/:id
+POST   /posts
+PUT    /posts/:id
+POST   /posts/:id/delete
+```
+
+Creating, updating, and deleting posts require an authenticated admin user.
+
+### Likes
+
+```bash
+POST /posts/:id/like
+GET  /posts/:id/like-status
+```
+
+### Comments
+
+```bash
+GET    /posts/:id/comments
+POST   /posts/:id/comments
+PUT    /comments/:id
+DELETE /comments/:id
+```
+
+Comment replies use `reply_to_comment_id`. The backend resolves the root parent comment so replies remain visually two levels deep.
+
+### Server-Sent Events
+
+```bash
+GET /events
+```
+
+Current SSE event types:
+
+```bash
+postLikeUpdated
+commentCreated
+commentUpdated
+commentDeleted
 ```

@@ -112,11 +112,115 @@ Finally, further system optimizations may include introducing pagination to hand
 
 ## Final Report
 
-### 專案說明
-<!-- 完整描述你的專案做了什麼 -->
+### Project Description
 
-### 使用方式
-<!-- 如何編譯、執行、使用你的程式 -->
+This project implements a full-stack personal blog system with article management, authentication, likes, nested comments, search, sorting, performance benchmarking, and automated testing.
 
-### 與課程的關聯總結
-<!-- 總結你的專題與進階程式設計及資料結構課程之間的關聯 -->
+The system is built with a React + TypeScript + Vite frontend and a Node.js + Express + SQLite backend. It supports a complete blog workflow:
+
+- Visitors can browse posts, search by keyword, filter by category, sort posts, and open post detail pages.
+- Admin users can create, edit, and delete posts.
+- Logged-in users can like posts and add comments.
+- Comments support a two-level nested reply model inspired by Dcard-style floor labels such as `B1` and `B1-1`.
+- Comment authors can edit and delete their own comments.
+- Real-time updates are supported through Server-Sent Events for post likes and comments.
+- Image cleanup is handled through Cloudinary when posts are deleted.
+
+The project also includes several data-structure-based optimizations:
+
+- A **Bigram index** for faster keyword search.
+- A **Binary Search Tree based post index** for time-based sorting.
+- A **Top-K heap manager** for like-based ranking.
+- A **normalized comment index using Map lookup** for efficient comment retrieval and updates.
+
+Benchmark pages are included in the frontend to compare optimized approaches against baseline implementations, such as array search versus map lookup and full re-sorting versus heap-based updates.
+
+### How to Run the Project
+
+Install and run the backend:
+
+```bash
+cd src/backend
+npm install
+node server.js
+```
+
+The backend runs at:
+
+```bash
+http://localhost:8000
+```
+
+Install and run the frontend:
+
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+
+The frontend runs at:
+
+```bash
+http://localhost:5173
+```
+
+Backend environment variables should be placed in `src/backend/.env`:
+
+```bash
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+JWT_SECRET=your_jwt_secret
+```
+
+Frontend environment variables may be placed in `src/frontend/.env`:
+
+```bash
+VITE_API_URL=http://localhost:8000
+```
+
+Run frontend unit and integration tests:
+
+```bash
+cd src/frontend
+npm test -- --run
+```
+
+Run frontend production build:
+
+```bash
+cd src/frontend
+npm run build
+```
+
+Run end-to-end tests:
+
+```bash
+cd src/frontend
+npm run test:e2e
+```
+
+The E2E test suite uses Playwright and a separate SQLite database seeded through:
+
+```bash
+cd src/backend
+npm run seed:e2e
+```
+
+### Relationship to Advanced Programming and Data Structures
+
+This project is closely connected to advanced programming and data structure concepts because it applies them in a practical full-stack system rather than only in isolated exercises.
+
+From the programming perspective, the project demonstrates modular system design. The backend is separated into database initialization, schema migration, middleware, routes, and real-time SSE logic. The frontend is organized into API modules, reusable components, hooks, types, benchmark utilities, and test suites. This structure improves maintainability and makes the system easier to extend.
+
+From the data structure perspective, several core features rely on custom structures and algorithmic thinking:
+
+- The search feature uses a **bigram inverted index** to reduce repeated full-text scans.
+- Time-based sorting uses a **Binary Search Tree manager** to maintain ordered post collections.
+- Like-based ranking uses a **Top-K heap design**, avoiding full array re-sorting whenever likes change.
+- Comment rendering and updates use a **normalized Map-based index**, reducing repeated linear scans when resolving comment floors, replies, and update targets.
+
+The benchmark page directly compares baseline and optimized approaches, making algorithmic complexity visible through measured runtime differences. For example, `Array.find` and `Array.map` approaches are compared with `Map.get` and `Map.set`, while full re-sorting is compared with heap-based Top-K updates.
+
+Overall, this project connects frontend development, backend API design, database persistence, authentication, real-time updates, testing, and data-structure optimization into one complete application. It shows how data structures can improve real user-facing features such as search, sorting, ranking, and comment management.
