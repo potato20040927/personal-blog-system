@@ -3,6 +3,7 @@ import { PostsContext } from '../components/Layout';
 import { runBenchmark, runSortBenchmark } from '../benchmark/runBenchmark';
 import PostList from './PostList';
 import { runTopKBenchmark } from '../benchmark/runTopKBenchmark';
+import { runCommentLookupBenchmark } from '../benchmark/runCommentLookupBenchmark';
 
 const BenchmarkPage: React.FC = () => {
   const context = useContext(PostsContext);
@@ -14,6 +15,7 @@ const BenchmarkPage: React.FC = () => {
   const [sortResult, setSortResult] = useState<any>(null);
 
   const [topKResult, setTopKResult] = useState<any>(null);
+  const [commentLookupResult, setCommentLookupResult] = useState<any>(null);
 
   const handleRunSearchBenchmark = () => {
     if (!query.trim()) return;
@@ -26,6 +28,10 @@ const BenchmarkPage: React.FC = () => {
 
   const handleRunTopKBenchmark = () => {
     setTopKResult(runTopKBenchmark(posts));
+  };
+
+  const handleRunCommentLookupBenchmark = () => {
+    setCommentLookupResult(runCommentLookupBenchmark(posts.length));
   };
 
   return (
@@ -88,6 +94,42 @@ const BenchmarkPage: React.FC = () => {
               <p>Top-K Heap Size: {topKResult.heapSize}</p>
               <p>Candidate Heap Size: {topKResult.candidateSize}</p>
               <h3 style={{ color: '#2c7be5' }}>Speedup: {topKResult.speedup.toFixed(2)}x</h3>
+            </div>
+          )}
+        </section>
+
+        {/* 留言查找效能 (Hash Map Index) */}
+        <section style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '12px' }}>
+          <h2>4. Comment Lookup</h2>
+          <p>Array.find vs. Map.get</p>
+          <button onClick={handleRunCommentLookupBenchmark} style={{ width: '100%' }}>Run Comment Lookup</button>
+
+          {commentLookupResult && (
+            <div style={{ marginTop: '1rem', background: '#f9f9f9', padding: '1rem' }}>
+              <p>Comments: {commentLookupResult.commentCount}</p>
+              <p>Lookups: {commentLookupResult.lookupCount}</p>
+              <hr />
+              <p>Array.find: {commentLookupResult.linearTime.toFixed(4)} ms</p>
+              <p>Map.get: {commentLookupResult.hashMapTime.toFixed(4)} ms</p>
+              <h3 style={{ color: '#2c7be5' }}>Lookup Speedup: {commentLookupResult.speedup.toFixed(2)}x</h3>
+            </div>
+          )}
+        </section>
+
+        {/* 留言更新效能 (Hash Map Index) */}
+        <section style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '12px' }}>
+          <h2>5. Comment Update</h2>
+          <p>Array.map vs. Map.set</p>
+          <button onClick={handleRunCommentLookupBenchmark} style={{ width: '100%' }}>Run Comment Update</button>
+
+          {commentLookupResult && (
+            <div style={{ marginTop: '1rem', background: '#f9f9f9', padding: '1rem' }}>
+              <p>Comments: {commentLookupResult.commentCount}</p>
+              <p>Updates: {commentLookupResult.updateCount}</p>
+              <hr />
+              <p>Array.map Update: {commentLookupResult.arrayUpdateTime.toFixed(4)} ms</p>
+              <p>Map.set Update: {commentLookupResult.mapUpdateTime.toFixed(4)} ms</p>
+              <h3 style={{ color: '#2c7be5' }}>Update Speedup: {commentLookupResult.updateSpeedup.toFixed(2)}x</h3>
             </div>
           )}
         </section>
