@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './AuthPage.css';
 
 const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -28,36 +29,32 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>註冊</h2>
+    <main className="auth-page">
+      <section className="auth-panel" aria-labelledby="register-title">
+        <h2 id="register-title">註冊</h2>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          maxWidth: '300px',
-        }}
-      >
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <input
+            className="auth-input"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <input
+            className="auth-input"
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-        <button type="submit">註冊</button>
+          <button className="auth-button" type="submit">註冊</button>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
-    </div>
+          {error && <p className="auth-error">{error}</p>}
+        </form>
+      </section>
+    </main>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './AuthPage.css';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -29,40 +30,36 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>登入</h2>
+    <main className="auth-page">
+      <section className="auth-panel" aria-labelledby="login-title">
+        <h2 id="login-title">登入</h2>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          maxWidth: '300px',
-        }}
-      >
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <input
+            className="auth-input"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <input
+            className="auth-input"
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-        <button type="submit">登入</button>
+          <button className="auth-button" type="submit">登入</button>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
+          {error && <p className="auth-error">{error}</p>}
+        </form>
 
-      <p>
-        還沒有帳號？ <a href="/register">註冊</a>
-      </p>
-    </div>
+        <p className="auth-switch">
+          還沒有帳號？ <a href="/register">註冊</a>
+        </p>
+      </section>
+    </main>
   );
 };
 
