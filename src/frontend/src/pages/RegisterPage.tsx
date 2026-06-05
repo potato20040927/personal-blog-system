@@ -5,6 +5,7 @@ import './AuthPage.css';
 
 const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -14,12 +15,12 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !password) {
-      setError('請輸入帳號與密碼');
+    if (!username || !email || !password) {
+      setError('請輸入帳號、電子信箱與密碼');
       return;
     }
 
-    const success = await register(username, password);
+    const success = await register(username, email, password);
 
     if (success) {
       navigate('/login');
@@ -39,6 +40,14 @@ const RegisterPage: React.FC = () => {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <input
+            className="auth-input"
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <input

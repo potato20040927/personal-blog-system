@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const db = require('./db');
 
 async function seedAdmin() {
+  await db.ready;
+
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -14,10 +16,20 @@ async function seedAdmin() {
   }
 
   const hash = await bcrypt.hash(password, 10);
+  const sql =
+    db.dialect === 'postgres'
+      ? `
+        INSERT INTO users (username, password_hash, role)
+        VALUES (?, ?, 'admin')
+        ON CONFLICT (username) DO NOTHING
+      `
+      : `
+        INSERT OR IGNORE INTO users (username, password_hash, role)
+        VALUES (?, ?, 'admin')
+      `;
 
   db.run(
-    `INSERT OR IGNORE INTO users (username, password_hash, role)
-     VALUES (?, ?, 'admin')`,
+    sql,
     [username, hash],
     (err) => {
       if (err) console.error(err);

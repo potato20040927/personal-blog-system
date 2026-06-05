@@ -14,6 +14,7 @@ This backend provides the API layer for the personal blog system. It is built wi
 - Comment creation, editing, deletion, and soft deletion
 - SQLite schema initialization and lightweight migration logic
 - Cloudinary image cleanup when deleting posts
+- Admin-only Cloudinary image upload endpoint
 - E2E test database seeding
 
 ---
@@ -28,6 +29,8 @@ This backend provides the API layer for the personal blog system. It is built wi
 - Cloudinary
 - dotenv
 - cors
+- helmet
+- express-rate-limit
 - body-parser
 
 ---
@@ -84,9 +87,16 @@ CLOUDINARY_API_SECRET=your_api_secret
 JWT_SECRET=your_jwt_secret
 ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
+CORS_ORIGIN=http://localhost:5173
+DB_PATH=./db.sqlite
+DATABASE_URL=
+PGSSLMODE=require
+JSON_BODY_LIMIT=1mb
 ```
 
-`JWT_SECRET` is optional during local development because the backend has a development fallback, but it should be configured explicitly for real usage.
+`JWT_SECRET` is optional during local development because the backend has a development fallback, but it is required when `NODE_ENV=production`.
+
+When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND_ORIGIN`, `DATABASE_URL` or `DB_PATH`, and the Cloudinary credentials.
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by `seed.js` to create a local admin account.
 
@@ -95,6 +105,9 @@ The backend also supports these runtime environment variables:
 ```bash
 PORT=8000
 DB_PATH=./db.sqlite
+DATABASE_URL=
+NODE_ENV=development
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 These are useful for E2E testing because Playwright can start the backend with a separate database:
@@ -106,13 +119,19 @@ DB_PATH=./db.e2e.sqlite PORT=8000 node server.js
 ### 3. Start the Server
 
 ```bash
-node server.js
+npm start
 ```
 
 The server runs at:
 
 ```bash
 http://localhost:8000
+```
+
+Health check endpoint:
+
+```bash
+GET /health
 ```
 
 ---
@@ -166,6 +185,16 @@ After running the seed script, start the backend and log in through the frontend
 
 If the admin username already exists, `seed.js` uses `INSERT OR IGNORE`, so it will not overwrite the existing user's password or role.
 
+To update the existing admin username or password, change `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` in the backend environment and run:
+
+```bash
+npm run reset:admin
+```
+
+The reset script updates the first existing admin account. If no admin account
+exists, it creates one.
+
 ---
 
 ## Main API Routes
@@ -206,6 +235,16 @@ DELETE /comments/:id
 ```
 
 Comment replies use `reply_to_comment_id`. The backend resolves the root parent comment so replies remain visually two levels deep.
+
+### Uploads
+
+```bash
+POST /uploads/image
+```
+
+Image uploads require an authenticated admin user. The frontend sends image files
+to this endpoint, and the backend uploads them to Cloudinary using server-side
+credentials.
 
 ### Server-Sent Events
 

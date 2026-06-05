@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { deletePost, getLikeStatus, toggleLike } from '../api/posts';
@@ -7,6 +7,7 @@ import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import CommentSection from '../components/CommentSection';
+import DOMPurify from 'dompurify';
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -38,7 +39,16 @@ const PostDetail: React.FC = () => {
   const [loadingLike, setLoadingLike] = useState(true);
 
   const post = posts.find(p => p.id === Number(id));
-  
+  const sanitizedContent = useMemo(
+    () =>
+      post
+        ? DOMPurify.sanitize(post.content, {
+            USE_PROFILES: { html: true },
+            ADD_ATTR: ['target'],
+          })
+        : '',
+    [post?.content]
+  );
 
   const handleDelete = async () => {
     if (!isAdmin) {
@@ -189,7 +199,10 @@ const PostDetail: React.FC = () => {
           </button>
         </div>
       </div>
-      <div dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div
+        className="post-content"
+        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+      />
       <CommentSection postId={post.id} />
     </div>
   </div>

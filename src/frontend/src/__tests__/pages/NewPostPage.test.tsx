@@ -19,10 +19,10 @@ vi.mock('../../api/posts', () => ({
   createPost: (...args: any[]) => mockCreatePost(...args),
 }));
 
-vi.mock('react-quill', () => ({
-  default: ({ value, onChange }: any) => (
+vi.mock('../../components/RichTextEditor', () => ({
+  default: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
     <textarea
-      data-testid="quill"
+      data-testid="rich-text-editor"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -94,7 +94,7 @@ describe('NewPostPage', () => {
       target: { value: '測試文章' },
     });
 
-    fireEvent.change(screen.getByTestId('quill'), {
+    fireEvent.change(screen.getByTestId('rich-text-editor'), {
       target: { value: '內容' },
     });
 

@@ -3,58 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from '../components/Layout';
 import { createPost } from '../api/posts';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-
-const CLOUD_NAME = "dkoc0xopr";
-const UPLOAD_PRESET = "article_images";
-
-async function uploadImageToCloudinary(file: File): Promise<string> {
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", UPLOAD_PRESET);
-
-  const res = await fetch(url, {
-    method: "POST",
-    body: formData
-  });
-
-  const data = await res.json();
-  return data.secure_url;
-}
-
-const modules = {
-  toolbar: {
-    container: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ color: [] }, { background: [] }],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image'],
-      ['blockquote', 'code-block'],
-      ['clean']
-    ],
-    handlers: {
-      image: async function (this: any) {
-        const input = document.createElement('input');
-        input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'image/*');
-        input.click();
-
-        input.onchange = async () => {
-          if (input.files && input.files[0]) {
-            const file = input.files[0];
-            const imageUrl = await uploadImageToCloudinary(file);
-            
-            const range = this.quill.getSelection();
-            this.quill.insertEmbed(range?.index ?? 0, 'image', imageUrl);
-          }
-        };
-      }
-    }
-  }
-};
+import RichTextEditor from '../components/RichTextEditor';
+import { uploadImageToCloudinary } from '../utils/uploadImageToCloudinary';
 
 const categories = ['旅遊', '日記', '閒聊'];
 
@@ -124,12 +74,10 @@ const NewPostPage: React.FC = () => {
           ))}
         </select>
         <label>內容</label>
-        <ReactQuill
-          theme="snow"
+        <RichTextEditor
           value={content}
           onChange={setContent}
-          modules={modules}
-          style={{ minHeight: '200px', marginBottom: '2rem' }}
+          onUploadImage={uploadImageToCloudinary}
         />
         <button type="submit" style={{ padding: '0.8rem', fontSize: '1.1rem', borderRadius: '6px', border: 'none', backgroundColor: '#C68642', color: 'white', cursor: 'pointer' }}>
           送出

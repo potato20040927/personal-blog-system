@@ -1,4 +1,12 @@
 function initializeSchema(db) {
+  if (db.dialect === 'postgres') {
+    return initializePostgresSchema(db);
+  }
+
+  return initializeSqliteSchema(db);
+}
+
+function initializeSqliteSchema(db) {
   db.serialize(() => {
     db.run(`
       CREATE TABLE IF NOT EXISTS posts (
@@ -15,6 +23,7 @@ function initializeSchema(db) {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
+        email TEXT UNIQUE,
         password_hash TEXT NOT NULL,
         role TEXT DEFAULT 'user',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -57,6 +66,67 @@ function initializeSchema(db) {
 
     migrateCommentsTable(db);
   });
+
+  return Promise.resolve();
+}
+
+function initializePostgresSchema(db) {
+  return db.execSequential([
+    `
+      CREATE TABLE IF NOT EXISTS posts (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `,
+    `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
+        email TEXT UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT DEFAULT 'user',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `,
+    `
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS email TEXT UNIQUE
+    `,
+    `
+      CREATE TABLE IF NOT EXISTS likes (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, post_id)
+      )
+    `,
+    `
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        parent_comment_id INTEGER DEFAULT NULL REFERENCES comments(id) ON DELETE SET NULL,
+        reply_to_comment_id INTEGER DEFAULT NULL REFERENCES comments(id) ON DELETE SET NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        deleted_at TIMESTAMPTZ DEFAULT NULL
+      )
+    `,
+    `
+      CREATE INDEX IF NOT EXISTS idx_comments_post_parent_created
+      ON comments (post_id, parent_comment_id, created_at, id)
+    `,
+    `
+      CREATE INDEX IF NOT EXISTS idx_comments_reply_to
+      ON comments (reply_to_comment_id)
+    `,
+  ]);
 }
 
 function migrateCommentsTable(db) {
@@ -121,6 +191,18 @@ function migrateCommentsTable(db) {
     const hasDeletedAt = columns.some((column) => column.name === 'deletedAt');
     if (!hasDeletedAt) {
       db.run(`ALTER TABLE comments ADD COLUMN deletedAt DATETIME DEFAULT NULL`);
+    }
+  });
+
+  db.all(`PRAGMA table_info(users)`, (err, columns) => {
+    if (err) {
+      console.error('無法檢查 users 資料表', err.message);
+      return;
+    }
+
+    const hasEmail = columns.some((column) => column.name === 'email');
+    if (!hasEmail) {
+      db.run(`ALTER TABLE users ADD COLUMN email TEXT UNIQUE`);
     }
   });
 }

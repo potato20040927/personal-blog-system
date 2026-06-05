@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-function createAuthMiddleware(jwtSecret) {
+function createAuthMiddleware(jwtSecret, db) {
   return function authMiddleware(req, res, next) {
     const header = req.headers.authorization;
 
@@ -12,8 +12,32 @@ function createAuthMiddleware(jwtSecret) {
 
     try {
       const decoded = jwt.verify(token, jwtSecret);
-      req.user = decoded;
-      next();
+      if (!db) {
+        req.user = decoded;
+        next();
+        return;
+      }
+
+      db.get(
+        `SELECT id, username, role FROM users WHERE id = ?`,
+        [decoded.id],
+        (err, user) => {
+          if (err) {
+            return res.status(500).json({ error: 'Authentication failed' });
+          }
+
+          if (!user) {
+            return res.status(401).json({ error: 'User no longer exists' });
+          }
+
+          req.user = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+          };
+          next();
+        }
+      );
     } catch (err) {
       return res.status(401).json({ error: 'Invalid token' });
     }

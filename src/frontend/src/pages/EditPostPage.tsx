@@ -3,20 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from '../components/Layout';
 import { getPostById, updatePost } from '../api/posts';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ color: [] }, { background: [] }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link', 'image'],
-    ['blockquote', 'code-block'],
-    ['clean']
-  ]
-};
+import RichTextEditor from '../components/RichTextEditor';
+import { uploadImageToCloudinary } from '../utils/uploadImageToCloudinary';
 
 const categories = ['旅遊', '日記', '閒聊'];
 
@@ -118,12 +106,10 @@ const EditPostPage: React.FC = () => {
           ))}
         </select>
         <label>內容</label>
-        <ReactQuill
-          theme="snow"
+        <RichTextEditor
           value={content}
           onChange={setContent}
-          modules={modules}
-          style={{ minHeight: '200px', marginBottom: '2rem' }}
+          onUploadImage={uploadImageToCloudinary}
         />
         <button
           type="submit"

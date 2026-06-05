@@ -33,6 +33,16 @@ vi.mock('../../api/posts', () => {
   };
 });
 
+vi.mock('../../components/RichTextEditor', () => ({
+  default: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+    <textarea
+      data-testid="rich-text-editor"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  ),
+}));
+
 const mockContext = {
   posts: [],
   setPosts: vi.fn(),

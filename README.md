@@ -80,7 +80,7 @@ Overall, this prototype aims to confirm that a simple but fully functional blogg
 
 The current system has been implemented as a functional personal blog prototype using a full-stack architecture. The frontend is developed with React, TypeScript, and Vite, while the backend is built using Node.js with Express. A lightweight SQLite database is used for data persistence.
 
-On the frontend side, the system currently supports a complete blog browsing experience, including a post listing page and a detailed post view page. Users are able to browse all posts and filter them by categories. A post creation page has also been implemented, integrating the ReactQuill rich text editor, allowing users to write content in a format similar to modern blogging platforms. The editor supports structured input including titles, categories, and rich text formatting.
+On the frontend side, the system currently supports a complete blog browsing experience, including a post listing page and a detailed post view page. Users are able to browse all posts and filter them by categories. A post creation page has also been implemented, integrating a Tiptap-based rich text editor, allowing users to write content in a format similar to modern blogging platforms. The editor supports structured input including titles, categories, and rich text formatting.
 
 In addition, image uploading functionality has been integrated through Cloudinary. Images uploaded from the editor are stored in the cloud and returned as URLs, which are then embedded into the post content. This allows each post to contain a mixture of text and images.
 
@@ -91,9 +91,9 @@ On the backend, a complete set of CRUD APIs has been developed, supporting the c
 Overall, the current prototype already supports a complete blogging workflow, from content creation to storage, display, and deletion.
 
 ### Challenges Encountered
-One of the main challenges encountered during the development of the rich text content feature was handling the storage and rendering of HTML-based content. Since the blog system uses ReactQuill to generate rich text, the resulting content is stored in HTML format within the database. This introduced difficulties in rendering the content correctly on the frontend.
+One of the main challenges encountered during the development of the rich text content feature was handling the storage and rendering of HTML-based content. Since the blog system uses a rich text editor to generate HTML content, the resulting content is stored in HTML format within the database. This introduced difficulties in rendering the content correctly and safely on the frontend.
 
-To address this issue, I adopted the use of React’s `dangerouslySetInnerHTML` to render HTML content directly within the component. Through this approach, the system is able to correctly display formatted rich text content while preserving the original structure created in the editor.
+To address this issue, the frontend sanitizes stored HTML with DOMPurify before rendering it through React’s `dangerouslySetInnerHTML`. Through this approach, the system is able to display formatted rich text content while reducing the risk of cross-site scripting caused by unsafe HTML.
 
 Another challenge was encountered during the implementation of the image management feature. Since images uploaded through the editor are stored in Cloudinary and embedded as URLs inside the HTML content, deleting a post required more than simply removing the database record. The system needed to identify and extract the corresponding image identifiers from the HTML content.
 
@@ -153,6 +153,11 @@ CLOUDINARY_API_SECRET=your_api_secret
 JWT_SECRET=your_jwt_secret
 ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
+CORS_ORIGIN=http://localhost:5173
+DB_PATH=./db.sqlite
+DATABASE_URL=
+PGSSLMODE=require
+JSON_BODY_LIMIT=1mb
 ```
 
 Cloudinary credentials can be obtained by creating a free account at [Cloudinary](https://cloudinary.com/)
@@ -165,10 +170,17 @@ Seed the admin account:
 node seed.js
 ```
 
+To update the existing admin username or password from `ADMIN_USERNAME` and
+`ADMIN_PASSWORD`, run:
+
+```bash
+npm run reset:admin
+```
+
 Start the backend:
 
 ```bash
-node server.js
+npm start
 ```
 
 The backend runs at:
@@ -246,3 +258,79 @@ From the data structure perspective, several core features rely on custom struct
 The benchmark page directly compares baseline and optimized approaches, making algorithmic complexity visible through measured runtime differences. For example, `Array.find` and `Array.map` approaches are compared with `Map.get` and `Map.set`, while full re-sorting is compared with heap-based Top-K updates.
 
 Overall, this project connects frontend development, backend API design, database persistence, authentication, real-time updates, testing, and data-structure optimization into one complete application. It shows how data structures can improve real user-facing features such as search, sorting, ranking, and comment management.
+
+### Production Deployment Notes
+
+Before deploying this project publicly, create production environment variables based on `src/backend/.env.example` and `src/frontend/.env.example`.
+
+Backend production requirements:
+
+- Set `NODE_ENV=production`.
+- Set a long random `JWT_SECRET`; the backend refuses to start in production without it.
+- Set `CORS_ORIGIN` or `FRONTEND_ORIGIN` to the public frontend URL, for example `https://your-blog.example.com`.
+- Set Cloudinary credentials for image cleanup and media management; the backend refuses to start in production without them.
+- Set `DATABASE_URL` to the Supabase Postgres connection string. If `DATABASE_URL` is not set, the backend falls back to SQLite and requires `DB_PATH` to point to persistent storage.
+- Keep `.env`, SQLite database files, and Cloudinary secrets out of git.
+- Use `GET /health` as the backend health check endpoint.
+
+Frontend production requirements:
+
+- Set `VITE_API_URL` to the public backend API URL.
+- Article image uploads are sent to the backend, which uploads to Cloudinary with server-side credentials.
+- Build with `npm run build` and serve the generated `dist` directory through the chosen hosting provider.
+- On Vercel, set the project root to `src/frontend`, or configure the build command as `npm run build` from that directory. Vite client-side environment variables must use the `VITE_` prefix.
+
+Recommended Render backend settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `src/backend` |
+| Runtime | Node |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+| Health Check Path | `/health` |
+| Node Version | `20.x` |
+
+Render backend environment variables:
+
+| Name | Notes |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase Postgres session-pooler connection string |
+| `PGSSLMODE` | `require` |
+| `JWT_SECRET` | Long random secret |
+| `CORS_ORIGIN` | Vercel frontend URL |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `JSON_BODY_LIMIT` | Optional, for example `1mb` |
+
+Recommended Vercel frontend settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `src/frontend` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Node Version | `20.x` |
+
+Vercel frontend environment variables:
+
+| Name | Notes |
+|---|---|
+| `VITE_API_URL` | Render backend URL |
+
+Security checks before release:
+
+- Run `npm audit --audit-level=moderate` in both `src/backend` and `src/frontend`.
+- Run `npm test -- --run` and `npm run build` in `src/frontend`.
+- Confirm the backend starts with the production environment variables and rejects requests from unapproved origins.
+- Confirm rich text content is rendered through the DOMPurify sanitization path.
+
+Recommended Vercel and Supabase path:
+
+- Deploy the Vite frontend to Vercel.
+- Keep the current Express backend on a Node host that supports long-running processes and persistent storage, or migrate the API/database layer before putting the backend on serverless infrastructure.
+- Use Supabase Postgres through `DATABASE_URL`. Supabase recommends direct or session-pooler connections for persistent backend services and transaction-pooler connections for serverless functions.
+- Keep Cloudinary for image storage unless you intentionally migrate uploads to Supabase Storage later.
