@@ -1,4 +1,3 @@
-const sqlite3 = require('sqlite3').verbose();
 const { Pool } = require('pg');
 const { initializeSchema } = require('./schema');
 
@@ -12,6 +11,7 @@ db.ready = Promise.resolve(initializeSchema(db));
 module.exports = db;
 
 function createSqliteDb(path) {
+  const sqlite3 = require('sqlite3').verbose();
   const sqliteDb = new sqlite3.Database(path, (err) => {
     if (err) {
       console.error('無法開啟 SQLite 資料庫', err.message);
