@@ -275,6 +275,49 @@ Frontend production requirements:
 - Build with `npm run build` and serve the generated `dist` directory through the chosen hosting provider.
 - On Vercel, set the project root to `src/frontend`, or configure the build command as `npm run build` from that directory. Vite client-side environment variables must use the `VITE_` prefix.
 
+Recommended Render backend settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `src/backend` |
+| Runtime | Node |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+| Health Check Path | `/health` |
+| Node Version | `20.x` |
+
+Render backend environment variables:
+
+| Name | Notes |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase Postgres session-pooler connection string |
+| `PGSSLMODE` | `require` |
+| `JWT_SECRET` | Long random secret |
+| `CORS_ORIGIN` | Vercel frontend URL |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `JSON_BODY_LIMIT` | Optional, for example `1mb` |
+
+Recommended Vercel frontend settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `src/frontend` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Node Version | `20.x` |
+
+Vercel frontend environment variables:
+
+| Name | Notes |
+|---|---|
+| `VITE_API_URL` | Render backend URL |
+| `VITE_CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | Unsigned upload preset |
+
 Security checks before release:
 
 - Run `npm audit --audit-level=moderate` in both `src/backend` and `src/frontend`.
