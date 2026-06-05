@@ -25,6 +25,18 @@
   color: white;
 }
 
+.post-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.post-content a {
+  color: #0275d8;
+}
+
 .comment-section {
   margin-top: 2.5rem;
   padding-top: 1.5rem;

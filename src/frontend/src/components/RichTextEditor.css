@@ -1,0 +1,75 @@
+.rich-text-editor {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.rich-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  background: #f8f8f8;
+}
+
+.rich-text-toolbar button,
+.rich-text-toolbar select {
+  min-height: 32px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.rich-text-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.rich-text-toolbar button {
+  min-width: 34px;
+  padding: 0 0.55rem;
+  font-size: 0.95rem;
+}
+
+.rich-text-toolbar button.is-active {
+  border-color: #0275d8;
+  background: #e7f1ff;
+  color: #025caf;
+}
+
+.rich-text-content {
+  min-height: 220px;
+  padding: 0.9rem;
+}
+
+.rich-text-content .ProseMirror {
+  min-height: 220px;
+  outline: none;
+}
+
+.rich-text-content img,
+.rich-text-content .rich-text-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75rem 0;
+  border-radius: 4px;
+}
+
+.rich-text-content blockquote {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 4px solid #ddd;
+  color: #555;
+}
+
+.rich-text-content pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  border-radius: 4px;
+  background: #f3f3f3;
+}

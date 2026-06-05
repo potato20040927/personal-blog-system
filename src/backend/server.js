@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cloudinary = require('cloudinary').v2;
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
 
@@ -14,7 +16,27 @@ const { broadcastSSE, registerSseRoute } = require('./realtime/sse');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+const isProduction = process.env.NODE_ENV === 'production';
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? undefined : 'dev_secret_key');
+const allowedOrigins = (
+  process.env.CORS_ORIGIN ||
+  process.env.FRONTEND_ORIGIN ||
+  'http://localhost:5173'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (isProduction && !JWT_SECRET) {
+  console.error('Missing JWT_SECRET in production');
+  process.exit(1);
+}
+
+if (isProduction && !process.env.CORS_ORIGIN && !process.env.FRONTEND_ORIGIN) {
+  console.error('Missing CORS_ORIGIN or FRONTEND_ORIGIN in production');
+  process.exit(1);
+}
+
 const authMiddleware = createAuthMiddleware(JWT_SECRET);
 
 cloudinary.config({
@@ -23,12 +45,41 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-app.use(cors());
-app.use(bodyParser.json());
+app.use(helmet());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
+  })
+);
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+app.use(bodyParser.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
 registerSseRoute(app);
 
-app.use('/auth', createAuthRoutes({ db, jwtSecret: JWT_SECRET }));
+app.use(
+  '/auth',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+  createAuthRoutes({ db, jwtSecret: JWT_SECRET })
+);
 app.use(
   '/posts',
   createPostRoutes({
