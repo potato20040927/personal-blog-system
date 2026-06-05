@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "reset:admin": "node scripts/resetAdmin.js",
     "seed:e2e": "DB_PATH=./db.e2e.sqlite node scripts/seedE2eDb.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

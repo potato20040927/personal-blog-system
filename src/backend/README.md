@@ -184,6 +184,16 @@ After running the seed script, start the backend and log in through the frontend
 
 If the admin username already exists, `seed.js` uses `INSERT OR IGNORE`, so it will not overwrite the existing user's password or role.
 
+To update the existing admin username or password, change `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` in the backend environment and run:
+
+```bash
+npm run reset:admin
+```
+
+The reset script updates the first existing admin account. If no admin account
+exists, it creates one.
+
 ---
 
 ## Main API Routes

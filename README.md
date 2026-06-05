@@ -170,6 +170,13 @@ Seed the admin account:
 node seed.js
 ```
 
+To update the existing admin username or password from `ADMIN_USERNAME` and
+`ADMIN_PASSWORD`, run:
+
+```bash
+npm run reset:admin
+```
+
 Start the backend:
 
 ```bash
