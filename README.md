@@ -154,6 +154,7 @@ JWT_SECRET=your_jwt_secret
 ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
 CORS_ORIGIN=http://localhost:5173
+DB_PATH=./db.sqlite
 JSON_BODY_LIMIT=1mb
 ```
 
@@ -170,7 +171,7 @@ node seed.js
 Start the backend:
 
 ```bash
-node server.js
+npm start
 ```
 
 The backend runs at:
@@ -260,15 +261,17 @@ Backend production requirements:
 - Set `NODE_ENV=production`.
 - Set a long random `JWT_SECRET`; the backend refuses to start in production without it.
 - Set `CORS_ORIGIN` or `FRONTEND_ORIGIN` to the public frontend URL, for example `https://your-blog.example.com`.
-- Set Cloudinary credentials for image cleanup and media management.
-- Set `DB_PATH` to a persistent SQLite volume, or migrate to a managed database such as PostgreSQL before deploying to infrastructure without persistent disk.
+- Set Cloudinary credentials for image cleanup and media management; the backend refuses to start in production without them.
+- Set `DB_PATH` to a persistent SQLite volume; the backend refuses to start in production without it. For serverless environments such as Vercel Functions, migrate to a managed database such as Supabase Postgres instead of relying on local SQLite storage.
 - Keep `.env`, SQLite database files, and Cloudinary secrets out of git.
+- Use `GET /health` as the backend health check endpoint.
 
 Frontend production requirements:
 
 - Set `VITE_API_URL` to the public backend API URL.
 - Set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_UPLOAD_PRESET` for editor image uploads.
 - Build with `npm run build` and serve the generated `dist` directory through the chosen hosting provider.
+- On Vercel, set the project root to `src/frontend`, or configure the build command as `npm run build` from that directory. Vite client-side environment variables must use the `VITE_` prefix.
 
 Security checks before release:
 
@@ -276,3 +279,10 @@ Security checks before release:
 - Run `npm test -- --run` and `npm run build` in `src/frontend`.
 - Confirm the backend starts with the production environment variables and rejects requests from unapproved origins.
 - Confirm rich text content is rendered through the DOMPurify sanitization path.
+
+Recommended Vercel and Supabase path:
+
+- Deploy the Vite frontend to Vercel.
+- Keep the current Express backend on a Node host that supports long-running processes and persistent storage, or migrate the API/database layer before putting the backend on serverless infrastructure.
+- Use Supabase Postgres when moving away from SQLite. This is the preferred direction for production data because it avoids local filesystem persistence issues and prepares the project for managed backups, SQL migrations, and deployment previews.
+- Keep Cloudinary for image storage unless you intentionally migrate uploads to Supabase Storage later.

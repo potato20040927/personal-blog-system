@@ -28,6 +28,8 @@ This backend provides the API layer for the personal blog system. It is built wi
 - Cloudinary
 - dotenv
 - cors
+- helmet
+- express-rate-limit
 - body-parser
 
 ---
@@ -84,9 +86,14 @@ CLOUDINARY_API_SECRET=your_api_secret
 JWT_SECRET=your_jwt_secret
 ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
+CORS_ORIGIN=http://localhost:5173
+DB_PATH=./db.sqlite
+JSON_BODY_LIMIT=1mb
 ```
 
-`JWT_SECRET` is optional during local development because the backend has a development fallback, but it should be configured explicitly for real usage.
+`JWT_SECRET` is optional during local development because the backend has a development fallback, but it is required when `NODE_ENV=production`.
+
+When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND_ORIGIN`, `DB_PATH`, and the Cloudinary credentials.
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by `seed.js` to create a local admin account.
 
@@ -95,6 +102,8 @@ The backend also supports these runtime environment variables:
 ```bash
 PORT=8000
 DB_PATH=./db.sqlite
+NODE_ENV=development
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 These are useful for E2E testing because Playwright can start the backend with a separate database:
@@ -106,13 +115,19 @@ DB_PATH=./db.e2e.sqlite PORT=8000 node server.js
 ### 3. Start the Server
 
 ```bash
-node server.js
+npm start
 ```
 
 The server runs at:
 
 ```bash
 http://localhost:8000
+```
+
+Health check endpoint:
+
+```bash
+GET /health
 ```
 
 ---

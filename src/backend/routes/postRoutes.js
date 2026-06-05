@@ -6,6 +6,7 @@ function createPostRoutes({
   authMiddleware,
   broadcastSSE,
   cloudinary,
+  cloudinaryCloudName,
   db,
   jwtSecret,
 }) {
@@ -127,15 +128,7 @@ function createPostRoutes({
       if (err) return res.status(500).json({ error: err.message });
       if (!post) return res.status(404).json({ error: 'Not found' });
 
-      const regex =
-        /https:\/\/res\.cloudinary\.com\/dkoc0xopr\/image\/upload\/v\d+\/([^"'\s]+)/g;
-
-      let match;
-      const publicIds = [];
-
-      while ((match = regex.exec(post.content)) !== null) {
-        publicIds.push(match[1].replace(/\.[a-zA-Z]+$/, ''));
-      }
+      const publicIds = extractCloudinaryPublicIds(post.content, cloudinaryCloudName);
 
       for (const pid of publicIds) {
         try {
@@ -145,10 +138,17 @@ function createPostRoutes({
         }
       }
 
-      db.run('DELETE FROM posts WHERE id = ?', [req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+      try {
+        await runStatement(db, 'BEGIN TRANSACTION');
+        await runStatement(db, 'DELETE FROM comments WHERE post_id = ?', [req.params.id]);
+        await runStatement(db, 'DELETE FROM likes WHERE post_id = ?', [req.params.id]);
+        await runStatement(db, 'DELETE FROM posts WHERE id = ?', [req.params.id]);
+        await runStatement(db, 'COMMIT');
         res.json({ message: 'Deleted' });
-      });
+      } catch (deleteErr) {
+        await runStatement(db, 'ROLLBACK').catch(() => {});
+        res.status(500).json({ error: deleteErr.message });
+      }
     });
   });
 
@@ -249,6 +249,42 @@ function createPostRoutes({
   }
 
   return router;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractCloudinaryPublicIds(content, cloudName) {
+  if (!cloudName) return [];
+
+  const escapedCloudName = escapeRegExp(cloudName);
+  const regex = new RegExp(
+    `https://res\\.cloudinary\\.com/${escapedCloudName}/image/upload/(?:[^/"'\\s]+/)*v\\d+/([^"'\\s]+)`,
+    'g'
+  );
+
+  const publicIds = [];
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    publicIds.push(match[1].replace(/\.[a-zA-Z0-9]+$/, ''));
+  }
+
+  return publicIds;
+}
+
+function runStatement(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(this);
+    });
+  });
 }
 
 module.exports = createPostRoutes;

@@ -18,6 +18,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 8000;
 const isProduction = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? undefined : 'dev_secret_key');
+const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const allowedOrigins = (
   process.env.CORS_ORIGIN ||
   process.env.FRONTEND_ORIGIN ||
@@ -27,20 +28,26 @@ const allowedOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-if (isProduction && !JWT_SECRET) {
-  console.error('Missing JWT_SECRET in production');
-  process.exit(1);
-}
+const missingProductionEnv = [
+  ['JWT_SECRET', JWT_SECRET],
+  ['CORS_ORIGIN or FRONTEND_ORIGIN', process.env.CORS_ORIGIN || process.env.FRONTEND_ORIGIN],
+  ['DB_PATH', process.env.DB_PATH],
+  ['CLOUDINARY_CLOUD_NAME', cloudinaryCloudName],
+  ['CLOUDINARY_API_KEY', process.env.CLOUDINARY_API_KEY],
+  ['CLOUDINARY_API_SECRET', process.env.CLOUDINARY_API_SECRET],
+]
+  .filter(([, value]) => !value)
+  .map(([name]) => name);
 
-if (isProduction && !process.env.CORS_ORIGIN && !process.env.FRONTEND_ORIGIN) {
-  console.error('Missing CORS_ORIGIN or FRONTEND_ORIGIN in production');
+if (isProduction && missingProductionEnv.length > 0) {
+  console.error(`Missing production environment variables: ${missingProductionEnv.join(', ')}`);
   process.exit(1);
 }
 
 const authMiddleware = createAuthMiddleware(JWT_SECRET);
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_name: cloudinaryCloudName,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
@@ -68,6 +75,10 @@ app.use(
 );
 app.use(bodyParser.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 registerSseRoute(app);
 
 app.use(
@@ -86,6 +97,7 @@ app.use(
     adminOnly,
     authMiddleware,
     broadcastSSE,
+    cloudinaryCloudName,
     cloudinary,
     db,
     jwtSecret: JWT_SECRET,

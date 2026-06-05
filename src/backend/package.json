@@ -2,8 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "seed:e2e": "DB_PATH=./db.e2e.sqlite node scripts/seedE2eDb.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
