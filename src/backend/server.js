@@ -31,7 +31,7 @@ const allowedOrigins = (
 const missingProductionEnv = [
   ['JWT_SECRET', JWT_SECRET],
   ['CORS_ORIGIN or FRONTEND_ORIGIN', process.env.CORS_ORIGIN || process.env.FRONTEND_ORIGIN],
-  ['DB_PATH', process.env.DB_PATH],
+  ['DATABASE_URL or DB_PATH', process.env.DATABASE_URL || process.env.DB_PATH],
   ['CLOUDINARY_CLOUD_NAME', cloudinaryCloudName],
   ['CLOUDINARY_API_KEY', process.env.CLOUDINARY_API_KEY],
   ['CLOUDINARY_API_SECRET', process.env.CLOUDINARY_API_SECRET],
@@ -44,7 +44,7 @@ if (isProduction && missingProductionEnv.length > 0) {
   process.exit(1);
 }
 
-const authMiddleware = createAuthMiddleware(JWT_SECRET);
+const authMiddleware = createAuthMiddleware(JWT_SECRET, db);
 
 cloudinary.config({
   cloud_name: cloudinaryCloudName,
@@ -111,6 +111,13 @@ app.use(
   })
 );
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+db.ready
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database', err.message);
+    process.exit(1);
+  });

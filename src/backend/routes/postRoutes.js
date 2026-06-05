@@ -139,14 +139,9 @@ function createPostRoutes({
       }
 
       try {
-        await runStatement(db, 'BEGIN TRANSACTION');
-        await runStatement(db, 'DELETE FROM comments WHERE post_id = ?', [req.params.id]);
-        await runStatement(db, 'DELETE FROM likes WHERE post_id = ?', [req.params.id]);
-        await runStatement(db, 'DELETE FROM posts WHERE id = ?', [req.params.id]);
-        await runStatement(db, 'COMMIT');
+        await deletePostRecords(db, req.params.id);
         res.json({ message: 'Deleted' });
       } catch (deleteErr) {
-        await runStatement(db, 'ROLLBACK').catch(() => {});
         res.status(500).json({ error: deleteErr.message });
       }
     });
@@ -285,6 +280,32 @@ function runStatement(db, sql, params = []) {
       resolve(this);
     });
   });
+}
+
+async function deletePostRecords(db, postId) {
+  const statements = [
+    { sql: 'DELETE FROM comments WHERE post_id = ?', params: [postId] },
+    { sql: 'DELETE FROM likes WHERE post_id = ?', params: [postId] },
+    { sql: 'DELETE FROM posts WHERE id = ?', params: [postId] },
+  ];
+
+  if (db.transaction) {
+    await db.transaction(statements);
+    return;
+  }
+
+  await runStatement(db, 'BEGIN TRANSACTION');
+
+  try {
+    for (const statement of statements) {
+      await runStatement(db, statement.sql, statement.params);
+    }
+
+    await runStatement(db, 'COMMIT');
+  } catch (err) {
+    await runStatement(db, 'ROLLBACK').catch(() => {});
+    throw err;
+  }
 }
 
 module.exports = createPostRoutes;

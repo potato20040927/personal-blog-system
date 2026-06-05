@@ -155,6 +155,8 @@ ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
 CORS_ORIGIN=http://localhost:5173
 DB_PATH=./db.sqlite
+DATABASE_URL=
+PGSSLMODE=require
 JSON_BODY_LIMIT=1mb
 ```
 
@@ -262,7 +264,7 @@ Backend production requirements:
 - Set a long random `JWT_SECRET`; the backend refuses to start in production without it.
 - Set `CORS_ORIGIN` or `FRONTEND_ORIGIN` to the public frontend URL, for example `https://your-blog.example.com`.
 - Set Cloudinary credentials for image cleanup and media management; the backend refuses to start in production without them.
-- Set `DB_PATH` to a persistent SQLite volume; the backend refuses to start in production without it. For serverless environments such as Vercel Functions, migrate to a managed database such as Supabase Postgres instead of relying on local SQLite storage.
+- Set `DATABASE_URL` to the Supabase Postgres connection string. If `DATABASE_URL` is not set, the backend falls back to SQLite and requires `DB_PATH` to point to persistent storage.
 - Keep `.env`, SQLite database files, and Cloudinary secrets out of git.
 - Use `GET /health` as the backend health check endpoint.
 
@@ -284,5 +286,5 @@ Recommended Vercel and Supabase path:
 
 - Deploy the Vite frontend to Vercel.
 - Keep the current Express backend on a Node host that supports long-running processes and persistent storage, or migrate the API/database layer before putting the backend on serverless infrastructure.
-- Use Supabase Postgres when moving away from SQLite. This is the preferred direction for production data because it avoids local filesystem persistence issues and prepares the project for managed backups, SQL migrations, and deployment previews.
+- Use Supabase Postgres through `DATABASE_URL`. Supabase recommends direct or session-pooler connections for persistent backend services and transaction-pooler connections for serverless functions.
 - Keep Cloudinary for image storage unless you intentionally migrate uploads to Supabase Storage later.

@@ -88,12 +88,14 @@ ADMIN_USERNAME=your_admin_name
 ADMIN_PASSWORD=your_admin_password
 CORS_ORIGIN=http://localhost:5173
 DB_PATH=./db.sqlite
+DATABASE_URL=
+PGSSLMODE=require
 JSON_BODY_LIMIT=1mb
 ```
 
 `JWT_SECRET` is optional during local development because the backend has a development fallback, but it is required when `NODE_ENV=production`.
 
-When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND_ORIGIN`, `DB_PATH`, and the Cloudinary credentials.
+When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND_ORIGIN`, `DATABASE_URL` or `DB_PATH`, and the Cloudinary credentials.
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by `seed.js` to create a local admin account.
 
@@ -102,6 +104,7 @@ The backend also supports these runtime environment variables:
 ```bash
 PORT=8000
 DB_PATH=./db.sqlite
+DATABASE_URL=
 NODE_ENV=development
 FRONTEND_ORIGIN=http://localhost:5173
 ```
