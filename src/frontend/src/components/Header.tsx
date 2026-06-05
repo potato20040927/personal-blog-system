@@ -17,18 +17,21 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
 
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
-  const { search, sortBy, setSortBy } = context;
+  const { category, search, sortBy, setSortBy } = context;
 
   return (
     <header className="site-header">
-      <h1 className="site-logo" onClick={() => { onSelectCategory?.(''); onSearch?.(''); navigate('/') }}>Potato's Blog</h1>
-      <nav className="site-nav">
-        {categories.map((cat) => (
-          <button key={cat} className="header-button" onClick={() => { onSelectCategory?.(cat); navigate('/'); }}>
-            {cat}
-          </button>
-        ))}
+      <div className="site-header-primary">
+        <h1 className="site-logo" onClick={() => { onSelectCategory?.(''); onSearch?.(''); navigate('/') }}>Potato's Blog</h1>
 
+        {user ? (
+          <button className="header-button header-auth-button" onClick={logout}>登出 ({user.username})</button>
+        ) : (
+          <button className="header-button header-auth-button" onClick={() => navigate('/login')}>登入</button>
+        )}
+      </div>
+
+      <nav className="site-nav">
         <div className="header-control-group">
           <div className="header-search-wrapper">
             <input
@@ -63,11 +66,18 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
           </select>
         </div>
 
-        {user ? (
-          <button className="header-button" onClick={logout}>登出 ({user.username})</button>
-        ) : (
-          <button className="header-button" onClick={() => navigate('/login')}>登入</button>
-        )}
+        <div className="header-category-group">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              className={`header-button header-category-button${category === cat ? ' is-active' : ''}`}
+              aria-pressed={category === cat}
+              onClick={() => { onSelectCategory?.(cat); navigate('/'); }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </nav>
     </header>
   );

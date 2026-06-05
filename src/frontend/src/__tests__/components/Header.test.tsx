@@ -75,4 +75,19 @@ describe('Header', () => {
     expect(onSelectCategory).toHaveBeenCalledWith('旅遊');
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
+
+  it('marks the selected category as active', () => {
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{ ...mockContext, category: '閒聊' }}>
+          <Header />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    const activeCategory = screen.getByRole('button', { name: '閒聊' });
+
+    expect(activeCategory).toHaveClass('is-active');
+    expect(activeCategory).toHaveAttribute('aria-pressed', 'true');
+  });
 });
