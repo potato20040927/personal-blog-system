@@ -23,6 +23,7 @@ function initializeSqliteSchema(db) {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
+        email TEXT UNIQUE,
         password_hash TEXT NOT NULL,
         role TEXT DEFAULT 'user',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -85,10 +86,15 @@ function initializePostgresSchema(db) {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
+        email TEXT UNIQUE,
         password_hash TEXT NOT NULL,
         role TEXT DEFAULT 'user',
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
+    `,
+    `
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS email TEXT UNIQUE
     `,
     `
       CREATE TABLE IF NOT EXISTS likes (
@@ -185,6 +191,18 @@ function migrateCommentsTable(db) {
     const hasDeletedAt = columns.some((column) => column.name === 'deletedAt');
     if (!hasDeletedAt) {
       db.run(`ALTER TABLE comments ADD COLUMN deletedAt DATETIME DEFAULT NULL`);
+    }
+  });
+
+  db.all(`PRAGMA table_info(users)`, (err, columns) => {
+    if (err) {
+      console.error('無法檢查 users 資料表', err.message);
+      return;
+    }
+
+    const hasEmail = columns.some((column) => column.name === 'email');
+    if (!hasEmail) {
+      db.run(`ALTER TABLE users ADD COLUMN email TEXT UNIQUE`);
     }
   });
 }

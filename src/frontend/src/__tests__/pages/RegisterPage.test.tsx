@@ -36,6 +36,7 @@ describe('RegisterPage', () => {
     );
 
     expect(screen.getByPlaceholderText('Username')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Email')).toBeTruthy();
     expect(screen.getByPlaceholderText('Password')).toBeTruthy();
     expect(screen.getByRole('button', { name: /註冊/i })).toBeTruthy();
   });
@@ -53,13 +54,17 @@ describe('RegisterPage', () => {
       target: { value: 'newuser' },
     });
 
+    fireEvent.change(screen.getByPlaceholderText('Email'), {
+      target: { value: 'newuser@example.com' },
+    });
+
     fireEvent.change(screen.getByPlaceholderText('Password'), {
       target: { value: '1234' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /註冊/i }));
 
-    expect(mockRegister).toHaveBeenCalledWith('newuser', '1234');
+    expect(mockRegister).toHaveBeenCalledWith('newuser', 'newuser@example.com', '1234');
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -77,6 +82,10 @@ describe('RegisterPage', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Username'), {
       target: { value: 'baduser' },
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Email'), {
+      target: { value: 'baduser@example.com' },
     });
 
     fireEvent.change(screen.getByPlaceholderText('Password'), {
@@ -102,7 +111,7 @@ describe('RegisterPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /註冊/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/請輸入帳號與密碼/)).toBeTruthy();
+      expect(screen.getByText(/請輸入帳號、電子信箱與密碼/)).toBeTruthy();
     });
 
     expect(mockRegister).not.toHaveBeenCalled();

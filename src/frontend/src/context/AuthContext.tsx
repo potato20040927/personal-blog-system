@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
-  register: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -61,11 +61,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (username: string, password: string) => {
+  const register = async (username: string, email: string, password: string) => {
     try {
       await apiClient('/auth/register', {
         method: 'POST',
-        body: { username, password },
+        body: { username, email, password },
       });
 
       return true;

@@ -6,20 +6,24 @@ function createAuthRoutes({ db, jwtSecret }) {
   const router = express.Router();
 
   router.post('/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
 
-    if (!username || !password) {
+    if (!username || !email || !password) {
       return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email' });
     }
 
     const hash = await bcrypt.hash(password, 10);
 
     db.run(
-      `INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'user')`,
-      [username, hash],
+      `INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, 'user')`,
+      [username, email, hash],
       function (err) {
         if (err) {
-          return res.status(400).json({ error: 'Username exists' });
+          return res.status(400).json({ error: 'Username or email exists' });
         }
 
         res.json({ message: 'Register success' });
@@ -60,6 +64,10 @@ function createAuthRoutes({ db, jwtSecret }) {
   });
 
   return router;
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 module.exports = createAuthRoutes;
