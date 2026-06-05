@@ -14,6 +14,7 @@ This backend provides the API layer for the personal blog system. It is built wi
 - Comment creation, editing, deletion, and soft deletion
 - SQLite schema initialization and lightweight migration logic
 - Cloudinary image cleanup when deleting posts
+- Admin-only Cloudinary image upload endpoint
 - E2E test database seeding
 
 ---
@@ -234,6 +235,16 @@ DELETE /comments/:id
 ```
 
 Comment replies use `reply_to_comment_id`. The backend resolves the root parent comment so replies remain visually two levels deep.
+
+### Uploads
+
+```bash
+POST /uploads/image
+```
+
+Image uploads require an authenticated admin user. The frontend sends image files
+to this endpoint, and the backend uploads them to Cloudinary using server-side
+credentials.
 
 ### Server-Sent Events
 

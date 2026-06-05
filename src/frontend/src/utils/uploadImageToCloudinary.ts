@@ -1,43 +1,33 @@
-const CLOUD_NAME =
-  import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dkoc0xopr';
-const UPLOAD_PRESET =
-  import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'article_images';
+import { API_BASE_URL } from '../api/config';
 
-interface CloudinaryUploadResponse {
-  secure_url?: string;
-  error?: {
-    message?: string;
-  };
+interface ImageUploadResponse {
+  url: string;
 }
 
 export async function uploadImageToCloudinary(file: File): Promise<string> {
-  if (!CLOUD_NAME || CLOUD_NAME === 'your_cloud_name') {
-    throw new Error('Missing VITE_CLOUDINARY_CLOUD_NAME');
-  }
-
-  if (!UPLOAD_PRESET || UPLOAD_PRESET === 'your_upload_preset') {
-    throw new Error('Missing VITE_CLOUDINARY_UPLOAD_PRESET');
-  }
-
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
+  const token = localStorage.getItem('token');
 
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE_URL}/uploads/image`, {
     method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: formData,
   });
 
-  const data = (await res.json()) as CloudinaryUploadResponse;
+  const data = (await res.json()) as Partial<ImageUploadResponse> & {
+    error?: string;
+  };
 
   if (!res.ok) {
-    throw new Error(data.error?.message || 'Image upload failed');
+    throw new Error(data.error || 'Image upload failed');
   }
 
-  if (!data.secure_url) {
-    throw new Error('Cloudinary did not return an image URL');
+  if (!data.url) {
+    throw new Error('Server did not return an image URL');
   }
 
-  return data.secure_url;
+  return data.url;
 }

@@ -11,6 +11,7 @@ const db = require('./db');
 const createAuthRoutes = require('./routes/authRoutes');
 const createCommentRoutes = require('./routes/commentRoutes');
 const createPostRoutes = require('./routes/postRoutes');
+const createUploadRoutes = require('./routes/uploadRoutes');
 const { adminOnly, createAuthMiddleware } = require('./middleware/auth');
 const { broadcastSSE, registerSseRoute } = require('./realtime/sse');
 
@@ -108,6 +109,14 @@ app.use(
     authMiddleware,
     broadcastSSE,
     db,
+  })
+);
+app.use(
+  '/uploads',
+  createUploadRoutes({
+    adminOnly,
+    authMiddleware,
+    cloudinary,
   })
 );
 

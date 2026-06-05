@@ -200,8 +200,6 @@ Create a frontend environment file at `src/frontend/.env`:
 
 ```bash
 VITE_API_URL=http://localhost:8000
-VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-VITE_CLOUDINARY_UPLOAD_PRESET=article_images
 ```
 
 Start the frontend:
@@ -278,7 +276,7 @@ Backend production requirements:
 Frontend production requirements:
 
 - Set `VITE_API_URL` to the public backend API URL.
-- Set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_UPLOAD_PRESET` for editor image uploads.
+- Article image uploads are sent to the backend, which uploads to Cloudinary with server-side credentials.
 - Build with `npm run build` and serve the generated `dist` directory through the chosen hosting provider.
 - On Vercel, set the project root to `src/frontend`, or configure the build command as `npm run build` from that directory. Vite client-side environment variables must use the `VITE_` prefix.
 
@@ -322,8 +320,6 @@ Vercel frontend environment variables:
 | Name | Notes |
 |---|---|
 | `VITE_API_URL` | Render backend URL |
-| `VITE_CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
-| `VITE_CLOUDINARY_UPLOAD_PRESET` | Unsigned upload preset |
 
 Security checks before release:
 
