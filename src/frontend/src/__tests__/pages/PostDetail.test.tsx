@@ -108,6 +108,59 @@ describe('PostDetail', () => {
     expect(screen.getByText('刪除')).toBeInTheDocument();
   });
 
+  it('會將既有文章中的 LaTeX delimiter 渲染成公式', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+    mockGetLikeStatus.mockResolvedValue({
+      count: 0,
+      liked: false,
+    });
+
+    render(
+      <PostsContext.Provider
+        value={createMockPostsContext({
+          posts: [{ ...post, content: '<p>公式：\\(x^2 + y^2 = z^2\\)</p>' }],
+        })}
+      >
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector('.post-content .katex')).toBeInTheDocument();
+    });
+  });
+
+  it('會將 Tiptap math node HTML 渲染成公式', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+    mockGetLikeStatus.mockResolvedValue({
+      count: 0,
+      liked: false,
+    });
+
+    render(
+      <PostsContext.Provider
+        value={createMockPostsContext({
+          posts: [
+            {
+              ...post,
+              content: '<div data-type="block-math" data-latex="\\begin{bmatrix}1 & 0 \\\\ 0 & 1\\end{bmatrix}"></div>',
+            },
+          ],
+        })}
+      >
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector('.post-content [data-type="block-math"] .katex')).toBeInTheDocument();
+    });
+  });
+
   it('刪除文章成功', async () => {
     mockUseAuth.mockReturnValue({
       user: { role: 'admin', name: 'test' },

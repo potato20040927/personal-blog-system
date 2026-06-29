@@ -5,6 +5,7 @@ import { PostsContext } from '../components/Layout';
 import { getPostById, updatePost } from '../api/posts';
 import RichTextEditor from '../components/RichTextEditor';
 import { uploadImageToCloudinary } from '../utils/uploadImageToCloudinary';
+import './PostEditorPage.css';
 
 const categories = ['旅遊', '日記', '閒聊'];
 
@@ -79,27 +80,27 @@ const EditPostPage: React.FC = () => {
 
 
   if (!isAdmin) {
-    return <p style={{ padding: '2rem' }}>你沒有權限修改文章</p>;
+    return <p className="post-editor-message">你沒有權限修改文章</p>;
   }
 
-  if (loading) return <p style={{ padding: '2rem' }}>載入中...</p>;
+  if (loading) return <p className="post-editor-message">載入中...</p>;
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
+    <div className="post-editor-page">
       <h2>修改文章</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit} className="post-editor-form">
         <label>標題</label>
         <input
+          className="post-editor-field"
           value={title}
           onChange={e => setTitle(e.target.value)}
           required
-          style={{ padding: '0.8rem', fontSize: '1.2rem', borderRadius: '6px', border: '1px solid #ccc' }}
         />
         <label>類別</label>
         <select
+          className="post-editor-field"
           value={category}
           onChange={e => setCategory(e.target.value)}
-          style={{ padding: '0.8rem', fontSize: '1.1rem', borderRadius: '6px', border: '1px solid #ccc' }}
         >
           {categories.map(cat => (
             <option key={cat} value={cat}>{cat}</option>
@@ -113,7 +114,7 @@ const EditPostPage: React.FC = () => {
         />
         <button
           type="submit"
-          style={{ padding: '0.8rem', fontSize: '1.1rem', borderRadius: '6px', border: 'none', backgroundColor: '#0275d8', color: 'white', cursor: 'pointer' }}
+          className="post-editor-submit post-editor-submit-edit"
         >
           確認修改
         </button>

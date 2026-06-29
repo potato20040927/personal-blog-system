@@ -37,6 +37,24 @@
   color: #0275d8;
 }
 
+.post-content .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+.post-content .tiptap-mathematics-render[data-type="block-math"] {
+  display: block;
+  overflow-x: auto;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.post-content .inline-math-error {
+  color: #d9534f;
+  font-family: monospace;
+}
+
 .comment-section {
   margin-top: 2.5rem;
   padding-top: 1.5rem;

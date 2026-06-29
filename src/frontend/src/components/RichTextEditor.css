@@ -41,6 +41,90 @@
   color: #025caf;
 }
 
+.math-editor-panel {
+  position: fixed;
+  z-index: 1000;
+  width: min(420px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid #b8d6f3;
+  border-radius: 6px;
+  background: #f7fbff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.math-editor-header,
+.math-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.math-editor-header {
+  margin-bottom: 0.5rem;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.math-editor-header:active {
+  cursor: grabbing;
+}
+
+.math-editor-header button,
+.math-editor-actions button {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font: inherit;
+}
+
+.math-editor-header button {
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.math-editor-panel textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  padding: 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.math-editor-actions {
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.math-editor-actions button {
+  min-height: 32px;
+  padding: 0 0.75rem;
+}
+
+.math-editor-actions .math-editor-confirm {
+  border-color: #0275d8;
+  background: #0275d8;
+  color: white;
+}
+
+.math-editor-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .rich-text-content {
   min-height: 220px;
   padding: 0.9rem;
@@ -72,4 +156,28 @@
   padding: 0.75rem;
   border-radius: 4px;
   background: #f3f3f3;
+}
+
+.tiptap-mathematics-render {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.05rem 0.2rem;
+  border-radius: 4px;
+}
+
+.tiptap-mathematics-render--editable {
+  cursor: pointer;
+}
+
+.tiptap-mathematics-render[data-type="block-math"] {
+  display: block;
+  overflow-x: auto;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.inline-math-error {
+  color: #d9534f;
+  font-family: monospace;
 }
