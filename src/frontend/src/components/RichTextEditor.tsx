@@ -2,6 +2,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
+import { Mathematics } from '@tiptap/extension-mathematics';
 import Underline from '@tiptap/extension-underline';
 import { useEffect, useRef, useState } from 'react';
 import './RichTextEditor.css';
@@ -39,6 +40,31 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         allowBase64: false,
         HTMLAttributes: {
           class: 'rich-text-image',
+        },
+      }),
+      Mathematics.configure({
+        inlineOptions: {
+          onClick: (node, pos) => {
+            if (!editor) return;
+
+            const latex = window.prompt('Edit inline LaTeX', node.attrs.latex);
+            if (!latex?.trim()) return;
+
+            editor.chain().focus().updateInlineMath({ pos, latex: latex.trim() }).run();
+          },
+        },
+        blockOptions: {
+          onClick: (node, pos) => {
+            if (!editor) return;
+
+            const latex = window.prompt('Edit block LaTeX', node.attrs.latex);
+            if (!latex?.trim()) return;
+
+            editor.chain().focus().updateBlockMath({ pos, latex: latex.trim() }).run();
+          },
+        },
+        katexOptions: {
+          throwOnError: false,
         },
       }),
     ],
@@ -82,6 +108,27 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const insertInlineMath = () => {
+    if (!editor) return;
+
+    const latex = window.prompt('Inline LaTeX', 'x^2 + y^2 = z^2');
+    if (!latex?.trim()) return;
+
+    editor.chain().focus().insertInlineMath({ latex: latex.trim() }).run();
+  };
+
+  const insertBlockMath = () => {
+    if (!editor) return;
+
+    const latex = window.prompt(
+      'Block LaTeX',
+      '\\begin{bmatrix}1 & 0 \\\\ 0 & 1\\end{bmatrix}'
+    );
+    if (!latex?.trim()) return;
+
+    editor.chain().focus().insertBlockMath({ latex: latex.trim() }).run();
   };
 
   const handleImageFile = async (file: File) => {
@@ -188,6 +235,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </button>
         <button type="button" onClick={setLink}>
           Link
+        </button>
+        <button type="button" onClick={insertInlineMath}>
+          Inline Math
+        </button>
+        <button type="button" onClick={insertBlockMath}>
+          Block Math
         </button>
         <button
           type="button"

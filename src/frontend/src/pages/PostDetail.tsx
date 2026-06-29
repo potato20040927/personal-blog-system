@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { deletePost, getLikeStatus, toggleLike } from '../api/posts';
@@ -8,6 +8,9 @@ import './PostDetail.css';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import CommentSection from '../components/CommentSection';
 import DOMPurify from 'dompurify';
+import katex from 'katex';
+import renderMathInElement from 'katex/contrib/auto-render';
+import 'katex/dist/katex.min.css';
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -37,6 +40,7 @@ const PostDetail: React.FC = () => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [loadingLike, setLoadingLike] = useState(true);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   const post = posts.find(p => p.id === Number(id));
   const sanitizedContent = useMemo(
@@ -44,11 +48,44 @@ const PostDetail: React.FC = () => {
       post
         ? DOMPurify.sanitize(post.content, {
             USE_PROFILES: { html: true },
-            ADD_ATTR: ['target'],
+            ADD_ATTR: ['target', 'data-type', 'data-latex'],
           })
         : '',
     [post?.content]
   );
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+
+    contentRef.current
+      .querySelectorAll<HTMLElement>('[data-type="inline-math"][data-latex], [data-type="block-math"][data-latex]')
+      .forEach((element) => {
+        const latex = element.dataset.latex;
+        if (!latex) return;
+
+        element.classList.add('tiptap-mathematics-render');
+
+        try {
+          katex.render(latex, element, {
+            displayMode: element.dataset.type === 'block-math',
+            throwOnError: false,
+          });
+        } catch {
+          element.textContent = latex;
+          element.classList.add('inline-math-error');
+        }
+      });
+
+    renderMathInElement(contentRef.current, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '\\(', right: '\\)', display: false },
+      ],
+      ignoredClasses: ['tiptap-mathematics-render', 'katex'],
+      throwOnError: false,
+    });
+  }, [sanitizedContent]);
 
   const handleDelete = async () => {
     if (!isAdmin) {
@@ -200,6 +237,7 @@ const PostDetail: React.FC = () => {
         </div>
       </div>
       <div
+        ref={contentRef}
         className="post-content"
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
