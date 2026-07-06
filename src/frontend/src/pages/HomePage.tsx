@@ -207,9 +207,16 @@ const HomePage: React.FC = () => {
     : 1;
 
   const setPage = (page: number) => {
+    const nextPage = Math.min(Math.max(1, page), totalPages);
+
     setPaginationState({
-      page: Math.min(Math.max(1, page), totalPages),
+      page: nextPage,
       key: pageKey,
+    });
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
     });
   };
 

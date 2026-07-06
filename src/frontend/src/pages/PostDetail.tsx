@@ -57,6 +57,14 @@ const PostDetail: React.FC = () => {
   );
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto',
+    });
+  }, [id]);
+
+  useEffect(() => {
     if (!contentRef.current) return;
 
     contentRef.current

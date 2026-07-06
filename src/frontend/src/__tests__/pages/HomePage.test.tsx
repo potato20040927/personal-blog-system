@@ -88,6 +88,7 @@ function createPosts(count: number, category = '日記') {
 describe('HomePage (AVL Tree Version)', () => {
   beforeEach(() => {
     mockViewport(false);
+    window.scrollTo = vi.fn();
   });
 
   it('可以正常渲染文章列表', () => {
@@ -227,6 +228,11 @@ describe('HomePage (AVL Tree Version)', () => {
     expect(screen.queryByText('分頁文章 21')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'smooth',
+    });
 
     await waitFor(() => {
       expect(screen.getAllByRole('heading')).toHaveLength(5);

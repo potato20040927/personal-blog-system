@@ -119,6 +119,24 @@ describe('PostDetail', () => {
     expect(screen.getByText('刪除')).toBeInTheDocument();
   });
 
+  it('進入文章詳細頁時會先回到頁面頂端', () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      left: 0,
+      behavior: 'auto',
+    });
+  });
+
   it('可以從右側快捷按鈕平滑跳到留言區', () => {
     mockUseAuth.mockReturnValue({
       user: { role: 'user' },
