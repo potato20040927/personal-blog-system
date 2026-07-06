@@ -36,6 +36,8 @@ const styles = {
     borderRadius: '8px',
     boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
     marginBottom: '1rem',
+    minWidth: 0,
+    overflow: 'hidden',
     color: 'black',
     cursor: 'pointer',
   },

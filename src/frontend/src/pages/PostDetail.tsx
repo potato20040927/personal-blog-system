@@ -5,7 +5,7 @@ import { deletePost, getLikeStatus, toggleLike } from '../api/posts';
 import { useContext } from 'react';
 import { PostsContext } from '../components/Layout';
 import './PostDetail.css';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaArrowUp, FaComments, FaHeart, FaRegHeart } from 'react-icons/fa';
 import CommentSection from '../components/CommentSection';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
@@ -41,6 +41,8 @@ const PostDetail: React.FC = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [loadingLike, setLoadingLike] = useState(true);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const commentsRef = useRef<HTMLDivElement | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const post = posts.find(p => p.id === Number(id));
   const sanitizedContent = useMemo(
@@ -132,6 +134,21 @@ const PostDetail: React.FC = () => {
     fetchLikeStatus();
   }, [id, user]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [sanitizedContent]);
+
   if (!post) return <p>找不到文章</p>;
   const isEdited = post.createdAt !== post.updatedAt;
 
@@ -156,6 +173,20 @@ const PostDetail: React.FC = () => {
     } catch (err) {
       alert('操作失敗');
     }
+  };
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
   };
 
   return (
@@ -241,7 +272,33 @@ const PostDetail: React.FC = () => {
         className="post-content"
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
-      <CommentSection postId={post.id} />
+      <div ref={commentsRef} className="post-comments-anchor">
+        <CommentSection postId={post.id} />
+      </div>
+    </div>
+
+    <div className="post-scroll-actions" aria-label="文章快速導覽">
+      {showBackToTop && (
+        <button
+          type="button"
+          className="post-scroll-button"
+          onClick={scrollToTop}
+          aria-label="回到文章頂部"
+          title="回到文章頂部"
+        >
+          <FaArrowUp aria-hidden="true" />
+        </button>
+      )}
+
+      <button
+        type="button"
+        className="post-scroll-button"
+        onClick={scrollToComments}
+        aria-label="跳到留言區"
+        title="跳到留言區"
+      >
+        <FaComments aria-hidden="true" />
+      </button>
     </div>
   </div>
 );

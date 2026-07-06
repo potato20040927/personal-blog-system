@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import HomePage from '../../pages/HomePage';
@@ -57,7 +57,39 @@ const mockContextBase = {
   sortBy: 'created-desc',
 };
 
+function mockViewport(isMobile: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: isMobile && query === '(max-width: 700px)',
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+function createPosts(count: number, category = '日記') {
+  return Array.from({ length: count }, (_, index) => {
+    const id = index + 1;
+
+    return {
+      id,
+      title: `分頁文章 ${id}`,
+      content: `content ${id}`,
+      category,
+      createdAt: `2024-01-${String(id).padStart(2, '0')}T10:00:00Z`,
+      updatedAt: `2024-01-${String(id).padStart(2, '0')}T10:00:00Z`,
+    };
+  });
+}
+
 describe('HomePage (AVL Tree Version)', () => {
+  beforeEach(() => {
+    mockViewport(false);
+  });
+
   it('可以正常渲染文章列表', () => {
     render(
       <MemoryRouter>
@@ -169,6 +201,117 @@ describe('HomePage (AVL Tree Version)', () => {
     
     const items = screen.queryAllByRole('article');
     expect(items.length).toBe(0);
+  });
+
+  it('桌機版首頁每頁最多顯示 20 篇文章，並可切換下一頁', async () => {
+    const posts = createPosts(25);
+
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{
+          ...mockContextBase,
+          posts,
+          index: buildBigramIndex(posts),
+          sortBy: 'created-asc',
+        } as any}>
+          <HomePage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('heading')).toHaveLength(20);
+    });
+
+    expect(screen.getByText('分頁文章 1')).toBeInTheDocument();
+    expect(screen.queryByText('分頁文章 21')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('heading')).toHaveLength(5);
+    });
+
+    expect(screen.getByText('分頁文章 21')).toBeInTheDocument();
+  });
+
+  it('手機版首頁每頁最多顯示 10 篇文章', async () => {
+    mockViewport(true);
+    const posts = createPosts(12);
+
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{
+          ...mockContextBase,
+          posts,
+          index: buildBigramIndex(posts),
+          sortBy: 'created-asc',
+        } as any}>
+          <HomePage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('heading')).toHaveLength(10);
+    });
+
+    expect(screen.getByText('分頁文章 1')).toBeInTheDocument();
+    expect(screen.queryByText('分頁文章 11')).not.toBeInTheDocument();
+  });
+
+  it('篩選條件改變後會回到第一頁', async () => {
+    const diaryPosts = createPosts(22, '日記');
+    const travelPosts = createPosts(3, '旅遊').map((post) => ({
+      ...post,
+      id: post.id + 100,
+      title: `旅遊文章 ${post.id}`,
+      createdAt: `2024-02-${String(post.id).padStart(2, '0')}T10:00:00Z`,
+      updatedAt: `2024-02-${String(post.id).padStart(2, '0')}T10:00:00Z`,
+    }));
+    const posts = [...diaryPosts, ...travelPosts];
+    const { rerender } = render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{
+          ...mockContextBase,
+          posts,
+          index: buildBigramIndex(posts),
+          sortBy: 'created-asc',
+        } as any}>
+          <HomePage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('heading')).toHaveLength(20);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('分頁文章 21')).toBeInTheDocument();
+    });
+
+    rerender(
+      <MemoryRouter>
+        <PostsContext.Provider value={{
+          ...mockContextBase,
+          posts,
+          category: '旅遊',
+          index: buildBigramIndex(posts),
+          sortBy: 'created-asc',
+        } as any}>
+          <HomePage />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('heading')).toHaveLength(3);
+    });
+
+    expect(screen.getByText('旅遊文章 1')).toBeInTheDocument();
   });
 
   it('likes-desc 只顯示目前資料中按讚數最高的前 10 篇', async () => {

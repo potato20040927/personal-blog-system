@@ -54,6 +54,17 @@ describe('PostDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetComments.mockResolvedValue([]);
+    mockGetLikeStatus.mockResolvedValue({
+      count: 0,
+      liked: false,
+    });
+    window.scrollTo = vi.fn();
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    Object.defineProperty(window, 'scrollY', {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
 
     globalThis.EventSource = vi.fn(function EventSourceMock() {
       return {
@@ -106,6 +117,84 @@ describe('PostDetail', () => {
 
     expect(screen.getByText('修改')).toBeInTheDocument();
     expect(screen.getByText('刪除')).toBeInTheDocument();
+  });
+
+  it('可以從右側快捷按鈕平滑跳到留言區', () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '跳到留言區' }));
+
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
+
+  it('離開文章頂部後會顯示回到頂部按鈕並平滑回頂', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    expect(screen.queryByRole('button', { name: '回到文章頂部' })).not.toBeInTheDocument();
+
+    Object.defineProperty(window, 'scrollY', {
+      value: 1,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+
+    const backToTopButton = await screen.findByRole('button', { name: '回到文章頂部' });
+    fireEvent.click(backToTopButton);
+
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'smooth',
+    });
+  });
+
+  it('回到頂部按鈕會排列在跳到留言區按鈕上方', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { role: 'user' },
+    });
+
+    render(
+      <PostsContext.Provider value={baseContext}>
+        <PostDetail />
+      </PostsContext.Provider>
+    );
+
+    Object.defineProperty(window, 'scrollY', {
+      value: 1,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+
+    await screen.findByRole('button', { name: '回到文章頂部' });
+
+    const quickNavButtons = screen.getAllByRole('button', {
+      name: /回到文章頂部|跳到留言區/,
+    });
+
+    expect(quickNavButtons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      '回到文章頂部',
+      '跳到留言區',
+    ]);
   });
 
   it('會將既有文章中的 LaTeX delimiter 渲染成公式', async () => {
