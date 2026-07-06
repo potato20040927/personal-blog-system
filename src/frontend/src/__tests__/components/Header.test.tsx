@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Header from '../../components/Header';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
@@ -74,6 +74,38 @@ describe('Header', () => {
 
     expect(onSelectCategory).toHaveBeenCalledWith('旅遊');
     expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  it('opens the mobile category menu and closes it after selecting a category', () => {
+    const onSelectCategory = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={mockContext}>
+          <Header onSelectCategory={onSelectCategory} />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    const menuButton = screen.getByRole('button', { name: '開啟文章分類選單' });
+
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: '日記' })).toBeInTheDocument();
+    expect(document.querySelector('#mobile-category-panel')).not.toBeInTheDocument();
+
+    fireEvent.click(menuButton);
+
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(document.querySelector('#mobile-category-panel')).toBeInTheDocument();
+
+    const mobilePanel = document.querySelector('#mobile-category-panel') as HTMLElement;
+    const mobileDiaryButton = within(mobilePanel).getByRole('button', { name: '日記' });
+
+    fireEvent.click(mobileDiaryButton);
+
+    expect(onSelectCategory).toHaveBeenCalledWith('日記');
+    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(document.querySelector('#mobile-category-panel')).not.toBeInTheDocument();
   });
 
   it('marks the selected category as active', () => {

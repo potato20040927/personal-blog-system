@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from './Layout';
@@ -14,14 +14,61 @@ const categories = ['旅遊', '日記', '閒聊'];
 const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
 
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
   const { category, search, sortBy, setSortBy } = context;
 
+  const selectCategory = (cat: string) => {
+    onSelectCategory?.(cat);
+    setIsCategoryMenuOpen(false);
+    navigate('/');
+  };
+
+  const resetHome = () => {
+    onSelectCategory?.('');
+    onSearch?.('');
+    setIsCategoryMenuOpen(false);
+    navigate('/');
+  };
+
   return (
     <header className="site-header">
-      <h1 className="site-logo" onClick={() => { onSelectCategory?.(''); onSearch?.(''); navigate('/') }}>Potato's Blog</h1>
+      <div className="site-brand">
+        <h1 className="site-logo" onClick={resetHome}>Potato's Blog</h1>
+
+        <div className="mobile-category-menu">
+          <button
+            type="button"
+            className="mobile-category-toggle"
+            onClick={() => setIsCategoryMenuOpen((isOpen) => !isOpen)}
+            aria-expanded={isCategoryMenuOpen}
+            aria-controls="mobile-category-panel"
+            aria-label="開啟文章分類選單"
+          >
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </button>
+
+          {isCategoryMenuOpen && (
+            <div id="mobile-category-panel" className="mobile-category-panel">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`header-button header-category-button${category === cat ? ' is-active' : ''}`}
+                  aria-pressed={category === cat}
+                  onClick={() => selectCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <nav className="site-nav">
         <div className="header-category-group">
@@ -30,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
               key={cat}
               className={`header-button header-category-button${category === cat ? ' is-active' : ''}`}
               aria-pressed={category === cat}
-              onClick={() => { onSelectCategory?.(cat); navigate('/'); }}
+              onClick={() => selectCategory(cat)}
             >
               {cat}
             </button>
