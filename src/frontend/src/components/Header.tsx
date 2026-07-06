@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from './Layout';
 import './Header.css';
@@ -13,6 +13,7 @@ const categories = ['旅遊', '日記', '閒聊'];
 
 const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
 
@@ -32,6 +33,15 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
     setIsCategoryMenuOpen(false);
     navigate('/');
   };
+
+  const openMap = () => {
+    onSelectCategory?.('');
+    onSearch?.('');
+    setIsCategoryMenuOpen(false);
+    navigate('/map');
+  };
+
+  const isMapPage = location.pathname === '/map';
 
   return (
     <header className="site-header">
@@ -65,6 +75,14 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
                   {cat}
                 </button>
               ))}
+              <button
+                type="button"
+                className={`header-button header-category-button header-map-button${isMapPage ? ' is-active' : ''}`}
+                aria-pressed={isMapPage}
+                onClick={openMap}
+              >
+                地圖
+              </button>
             </div>
           )}
         </div>
@@ -82,6 +100,14 @@ const Header: React.FC<HeaderProps> = ({ onSelectCategory, onSearch }) => {
               {cat}
             </button>
           ))}
+          <button
+            type="button"
+            className={`header-button header-category-button header-map-button${isMapPage ? ' is-active' : ''}`}
+            aria-pressed={isMapPage}
+            onClick={openMap}
+          >
+            地圖
+          </button>
         </div>
 
         <div className="header-control-group">

@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
 import EditPostPage from './pages/EditPostPage';
 import BenchmarkPage from './pages/BenchmarkPage';
+import TaiwanMapPage from './pages/TaiwanMapPage';
 import { AuthProvider } from './context/AuthContext';
 import RegisterPage from './pages/RegisterPage';
 
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="new" element={<NewPostPage />} />
             <Route path="post/:id/edit" element={<EditPostPage />} />
             <Route path="benchmark" element={<BenchmarkPage />} />
+            <Route path="map" element={<TaiwanMapPage />} />
             <Route path="register" element={<RegisterPage />} />
           </Route>
         </Routes>

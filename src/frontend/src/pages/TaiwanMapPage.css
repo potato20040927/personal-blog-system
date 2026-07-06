@@ -1,0 +1,266 @@
+.taiwan-map-page {
+  --taiwan-map-bg: #f5f7fb;
+  --taiwan-map-panel: #ffffff;
+  --taiwan-map-ink: #152033;
+  --taiwan-map-muted: #64748b;
+  --taiwan-map-line: #d8dee8;
+  --taiwan-map-accent: #2563eb;
+  --taiwan-map-selected: #f59e0b;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: calc(100vh - 74px);
+  color: var(--taiwan-map-ink);
+  background: var(--taiwan-map-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.taiwan-map-page button {
+  min-height: 36px;
+  border: 1px solid #cfd8e3;
+  border-radius: 7px;
+  padding: 0 12px;
+  color: var(--taiwan-map-ink);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.taiwan-map-page button:hover {
+  background: #f1f5f9;
+}
+
+.taiwan-map-panel {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: #e9eef6;
+  touch-action: none;
+}
+
+.taiwan-map-stage {
+  width: 100%;
+  height: calc(100vh - 74px);
+  min-height: 580px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.taiwan-map-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.taiwan-map-stage svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.taiwan-map-toolbar {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--taiwan-map-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.taiwan-map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  border-left: 1px solid var(--taiwan-map-line);
+  background: var(--taiwan-map-panel);
+}
+
+.taiwan-map-eyebrow {
+  margin: 0 0 6px;
+  color: var(--taiwan-map-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.taiwan-map-page h1,
+.taiwan-map-page h2,
+.taiwan-map-page p {
+  margin-top: 0;
+}
+
+.taiwan-map-page h1 {
+  margin-bottom: 8px;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.taiwan-map-page h2 {
+  margin-bottom: 16px;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.taiwan-map-muted {
+  margin-bottom: 0;
+  color: var(--taiwan-map-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.taiwan-map-selected-card,
+.taiwan-map-meta {
+  border: 1px solid var(--taiwan-map-line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.taiwan-map-selected-card {
+  padding: 16px;
+}
+
+.taiwan-map-status-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--taiwan-map-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.taiwan-map-page dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.taiwan-map-page dt,
+.taiwan-map-meta span {
+  color: var(--taiwan-map-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.taiwan-map-page dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+.taiwan-map-meta {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.taiwan-map-meta div {
+  display: grid;
+  gap: 4px;
+  padding: 13px 16px;
+  background: #fff;
+}
+
+.taiwan-map-stage .region {
+  cursor: pointer;
+}
+
+.taiwan-map-stage.is-county-view svg .region {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+}
+
+.taiwan-map-stage.is-county-view svg .map-line {
+  opacity: 0;
+}
+
+.taiwan-map-stage.is-county-view svg .region.is-county-hovered:not(.is-selected) {
+  opacity: 1;
+  fill: #bfdbfe !important;
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+}
+
+.taiwan-map-stage svg .region.is-dimmed:not(.is-selected) {
+  opacity: 0.34;
+  filter: saturate(0.55);
+}
+
+.taiwan-map-stage.is-county-view svg .region.is-dimmed:not(.is-selected) {
+  opacity: 1;
+  filter: none;
+}
+
+.taiwan-map-stage svg .region.is-selected {
+  opacity: 1;
+  fill: #ef4444 !important;
+  stroke: var(--taiwan-map-selected) !important;
+  stroke-width: 2 !important;
+}
+
+.taiwan-map-stage.is-county-view svg .region.is-selected {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+}
+
+.taiwan-map-stage svg .region:hover,
+.taiwan-map-stage svg .region:focus {
+  opacity: 0.86;
+  stroke: var(--taiwan-map-accent) !important;
+  stroke-width: 1.4 !important;
+  outline: none;
+}
+
+.taiwan-map-stage.is-county-view svg .region:hover,
+.taiwan-map-stage.is-county-view svg .region:focus {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+}
+
+.taiwan-map-stage.is-county-view svg .region.is-county-hovered:not(.is-selected):hover,
+.taiwan-map-stage.is-county-view svg .region.is-county-hovered:not(.is-selected):focus {
+  opacity: 1;
+  fill: #bfdbfe !important;
+}
+
+.taiwan-map-stage .county-boundary-layer,
+.taiwan-map-stage .county-boundary {
+  pointer-events: none;
+}
+
+.taiwan-map-stage .county-boundary {
+  filter: url("#county-outline-filter");
+}
+
+.taiwan-map-stage #rect957,
+.taiwan-map-stage #svg_43 {
+  stroke: #000000 !important;
+  stroke-width: 1 !important;
+  stroke-opacity: 1 !important;
+  opacity: 1 !important;
+  stroke-linejoin: miter;
+  stroke-linecap: butt;
+  vector-effect: none;
+}
+
+@media (max-width: 860px) {
+  .taiwan-map-page {
+    grid-template-columns: 1fr;
+  }
+
+  .taiwan-map-stage {
+    height: 64vh;
+    min-height: 420px;
+  }
+
+  .taiwan-map-sidebar {
+    border-top: 1px solid var(--taiwan-map-line);
+    border-left: 0;
+  }
+}
