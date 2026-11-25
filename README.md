@@ -279,6 +279,8 @@ Frontend production requirements:
 - Article image uploads are sent to the backend, which uploads to Cloudinary with server-side credentials.
 - Build with `npm run build` and serve the generated `dist` directory through the chosen hosting provider.
 - On Vercel, set the project root to `src/frontend`, or configure the build command as `npm run build` from that directory. Vite client-side environment variables must use the `VITE_` prefix.
+- Set Vercel's Production Branch to `main`. The frontend's `vercel.json` enables automatic Git deployments from `main`.
+- Link the Render backend to `main` and set Auto-Deploy to On Commit.
 
 Recommended Render backend settings:
 
