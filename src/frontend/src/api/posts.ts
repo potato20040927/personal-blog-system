@@ -1,19 +1,22 @@
 import { apiClient } from './client';
 import type { Post } from '../types/post';
 
-export const getPosts = () => {
-  return apiClient<Post[]>('/posts');
+export const getPosts = (signal?: AbortSignal) => {
+  return apiClient<Post[]>('/posts', { signal });
 };
 
 export const getPostById = (id: string | number) => {
   return apiClient<Post>(`/posts/${id}`);
 };
 
-export const createPost = (data: {
+type PostInput = {
   title: string;
   content: string;
   category: string;
-}) => {
+  districtIds?: string[];
+};
+
+export const createPost = (data: PostInput) => {
   return apiClient<Post>('/posts', {
     method: 'POST',
     body: data,
@@ -22,11 +25,7 @@ export const createPost = (data: {
 
 export const updatePost = (
   id: string | number,
-  data: {
-    title: string;
-    content: string;
-    category: string;
-  }
+  data: PostInput
 ) => {
   return apiClient<Post>(`/posts/${id}`, {
     method: 'PUT',

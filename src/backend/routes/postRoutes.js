@@ -1,5 +1,24 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const districtNames = require('../data/districts.json');
+
+const districts = Object.entries(districtNames).map(([id, label]) => ({
+  id,
+  county: label.slice(0, 3),
+  name: label.slice(3),
+}));
+
+function serializeDistrictIds(ids) {
+  if (ids === undefined) return null;
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string' || !Object.hasOwn(districtNames, id))) {
+    throw new TypeError('請選擇有效的行政區');
+  }
+  return JSON.stringify([...new Set(ids)]);
+}
+
+function toPost({ district_ids, ...post }) {
+  return { ...post, districtIds: JSON.parse(district_ids ?? '[]') };
+}
 
 function createPostRoutes({
   adminOnly,
@@ -34,8 +53,12 @@ function createPostRoutes({
 
     db.all(sql, params, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows);
+      res.json(rows.map(toPost));
     });
+  });
+
+  router.get('/districts', (req, res) => {
+    res.json(districts);
   });
 
   router.get('/:id', (req, res) => {
@@ -51,20 +74,27 @@ function createPostRoutes({
     `, [id], (err, row) => {
       if (err) return res.status(500).json({ error: err.message });
       if (!row) return res.status(404).json({ error: 'Not found' });
-      res.json(row);
+      res.json(toPost(row));
     });
   });
 
   router.post('/', authMiddleware, adminOnly, (req, res) => {
-    const { title, content, category} = req.body;
+    const { title, content, category, districtIds } = req.body;
 
     if (!title || !content || !category) {
       return res.status(400).json({ error: 'Missing fields' });
     }
 
+    let locations;
+    try {
+      locations = serializeDistrictIds(districtIds);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
     db.run(
-      `INSERT INTO posts (title, content, category) VALUES (?, ?, ?)`,
-      [title, content, category],
+      `INSERT INTO posts (title, content, category, district_ids) VALUES (?, ?, ?, ?)`,
+      [title, content, category, locations ?? '[]'],
       function (err) {
         if (err) return res.status(500).json({ error: err.message });
 
@@ -81,7 +111,9 @@ function createPostRoutes({
           [this.lastID],
           (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json(row);
+            if (!row) return res.status(404).json({ error: 'Not found' });
+            broadcastSSE('postChanged', { id: row.id });
+            res.status(201).json(toPost(row));
           }
         );
       }
@@ -89,15 +121,23 @@ function createPostRoutes({
   });
 
   router.put('/:id', authMiddleware, adminOnly, (req, res) => {
-    const { title, content, category } = req.body;
+    const { title, content, category, districtIds } = req.body;
+
+    let locations;
+    try {
+      locations = serializeDistrictIds(districtIds);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
 
     db.run(
       `
       UPDATE posts
-      SET title = ?, content = ?, category = ?, updatedAt = CURRENT_TIMESTAMP
+      SET title = ?, content = ?, category = ?, district_ids = COALESCE(?, district_ids),
+        updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
-      [title, content, category, req.params.id],
+      [title, content, category, locations, req.params.id],
       function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0)
@@ -116,7 +156,9 @@ function createPostRoutes({
           [req.params.id],
           (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json(row);
+            if (!row) return res.status(404).json({ error: 'Not found' });
+            broadcastSSE('postChanged', { id: row.id });
+            res.json(toPost(row));
           }
         );
       }
@@ -140,6 +182,7 @@ function createPostRoutes({
 
       try {
         await deletePostRecords(db, req.params.id);
+        broadcastSSE('postChanged', { id: post.id });
         res.json({ message: 'Deleted' });
       } catch (deleteErr) {
         res.status(500).json({ error: deleteErr.message });

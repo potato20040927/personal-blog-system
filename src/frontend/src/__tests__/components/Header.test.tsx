@@ -7,7 +7,7 @@ import { PostsContext } from '../../components/Layout';
 // mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<any>('react-router-dom');
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
@@ -74,6 +74,25 @@ describe('Header', () => {
 
     expect(onSelectCategory).toHaveBeenCalledWith('旅遊');
     expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  it('clicking the map button clears filters and navigates to the map page', () => {
+    const onSelectCategory = vi.fn();
+    const onSearch = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <PostsContext.Provider value={{ ...mockContext, category: '旅遊', search: '台北' }}>
+          <Header onSelectCategory={onSelectCategory} onSearch={onSearch} />
+        </PostsContext.Provider>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '地圖' }));
+
+    expect(onSelectCategory).toHaveBeenCalledWith('');
+    expect(onSearch).toHaveBeenCalledWith('');
+    expect(mockNavigate).toHaveBeenCalledWith('/map');
   });
 
   it('opens the mobile category menu and closes it after selecting a category', () => {

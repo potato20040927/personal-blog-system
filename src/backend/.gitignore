@@ -28,3 +28,4 @@ env
 
 db.sqlite
 db.e2e.sqlite
+district-visits.sqlite*

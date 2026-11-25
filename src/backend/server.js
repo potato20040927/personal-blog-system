@@ -8,8 +8,10 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const db = require('./db');
+const districtVisitsDb = require('./db/districtVisits');
 const createAuthRoutes = require('./routes/authRoutes');
 const createCommentRoutes = require('./routes/commentRoutes');
+const createDistrictVisitRoutes = require('./routes/districtVisitRoutes');
 const createPostRoutes = require('./routes/postRoutes');
 const createUploadRoutes = require('./routes/uploadRoutes');
 const { adminOnly, createAuthMiddleware } = require('./middleware/auth');
@@ -105,6 +107,10 @@ app.use(
   })
 );
 app.use(
+  '/district-visits',
+  createDistrictVisitRoutes({ db: districtVisitsDb, authMiddleware, adminOnly, cloudinary })
+);
+app.use(
   createCommentRoutes({
     authMiddleware,
     broadcastSSE,
@@ -120,7 +126,7 @@ app.use(
   })
 );
 
-db.ready
+Promise.all([db.ready, districtVisitsDb.ready])
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
