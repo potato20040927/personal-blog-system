@@ -1,5 +1,6 @@
 const { promisify } = require('node:util');
 const { openDatabase } = require('./connection');
+const blogDb = require('./index');
 
 const districtVisitSchema = [
   `
@@ -18,14 +19,41 @@ const districtVisitSchema = [
   `,
 ];
 
-const db = openDatabase({
-  databaseUrl: process.env.DISTRICT_VISITS_DATABASE_URL,
-  dbPath: process.env.DISTRICT_VISITS_DB_PATH || './district-visits.sqlite',
-  sslMode: process.env.DISTRICT_VISITS_PGSSLMODE,
-});
+const databaseUrl = process.env.DISTRICT_VISITS_DATABASE_URL;
+const db = databaseUrl || blogDb.dialect !== 'postgres'
+  ? openDatabase({
+      databaseUrl,
+      dbPath: process.env.DISTRICT_VISITS_DB_PATH || './district-visits.sqlite',
+      sslMode: process.env.DISTRICT_VISITS_PGSSLMODE,
+    })
+  : blogDb;
 
-db.ready = db.dialect === 'postgres'
-  ? db.execSequential(districtVisitSchema)
-  : promisify(db.exec.bind(db))(districtVisitSchema.join(';\n'));
+async function initializeDistrictVisits() {
+  if (db.dialect !== 'postgres') {
+    const exec = promisify(db.exec.bind(db));
+    await exec(districtVisitSchema.join(';\n'));
+    return;
+  }
 
-module.exports = db;
+  if (db === blogDb) await blogDb.ready;
+
+  const statements = [
+    ...districtVisitSchema,
+    'ALTER TABLE district_visit_notes ENABLE ROW LEVEL SECURITY',
+    'ALTER TABLE district_visit_photos ENABLE ROW LEVEL SECURITY',
+    'REVOKE ALL ON TABLE district_visit_notes, district_visit_photos FROM PUBLIC',
+    `
+      DO $$
+      DECLARE api_role text;
+      BEGIN
+        FOR api_role IN SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated') LOOP
+          EXECUTE format('REVOKE ALL ON TABLE district_visit_notes, district_visit_photos FROM %I', api_role);
+        END LOOP;
+      END
+      $$;
+    `,
+  ];
+  await db.transaction(statements.map((sql) => ({ sql })));
+}
+
+module.exports = { db, ready: initializeDistrictVisits() };

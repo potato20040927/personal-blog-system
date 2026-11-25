@@ -100,7 +100,9 @@ When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND
 
 ### Travel map records
 
-District descriptions and photo references use a separate database. By default the backend creates `district-visits.sqlite` in its working directory. Set `DISTRICT_VISITS_DB_PATH` to place it on a persistent volume, or set `DISTRICT_VISITS_DATABASE_URL` to use a separate PostgreSQL database. `DISTRICT_VISITS_PGSSLMODE` optionally overrides `PGSSLMODE` for the map database.
+When `DATABASE_URL` points to PostgreSQL, the map uses the same database as the blog. The backend creates dedicated tables for district descriptions and photo URLs. They are accessed through the backend API.
+
+For SQLite development, the map uses `district-visits.sqlite` by default. Use `DISTRICT_VISITS_DB_PATH` to select its path. `DISTRICT_VISITS_DATABASE_URL` can override the map's PostgreSQL connection, and `DISTRICT_VISITS_PGSSLMODE` optionally overrides `PGSSLMODE` for that connection.
 
 Photos use Cloudinary. The map continues to show links to posts tagged with each district using the blog's existing database.
 

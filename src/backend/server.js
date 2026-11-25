@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const db = require('./db');
-const districtVisitsDb = require('./db/districtVisits');
+const { db: districtVisitsDb, ready: districtVisitsReady } = require('./db/districtVisits');
 const createAuthRoutes = require('./routes/authRoutes');
 const createCommentRoutes = require('./routes/commentRoutes');
 const createDistrictVisitRoutes = require('./routes/districtVisitRoutes');
@@ -126,7 +126,7 @@ app.use(
   })
 );
 
-Promise.all([db.ready, districtVisitsDb.ready])
+Promise.all([db.ready, districtVisitsReady])
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

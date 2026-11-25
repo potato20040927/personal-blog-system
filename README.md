@@ -298,7 +298,7 @@ Render backend environment variables:
 | Name | Notes |
 |---|---|
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | Supabase Postgres session-pooler connection string |
+| `DATABASE_URL` | Supabase Postgres session-pooler connection string for blog and travel map records |
 | `PGSSLMODE` | `require` |
 | `JWT_SECRET` | Long random secret |
 | `CORS_ORIGIN` | Vercel frontend URL |
