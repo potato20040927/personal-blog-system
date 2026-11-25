@@ -313,7 +313,7 @@ Recommended Vercel frontend settings:
 | Framework Preset | Vite |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
-| Node Version | `20.x` |
+| Node Version | `26.x` |
 
 Vercel frontend environment variables:
 
