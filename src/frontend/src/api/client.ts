@@ -1,7 +1,7 @@
 import { API_BASE_URL } from './config';
 
-interface RequestOptions extends RequestInit {
-  body?: any;
+interface RequestOptions extends Omit<RequestInit, 'body'> {
+  body?: unknown;
 }
 
 export const apiClient = async <T>(
@@ -9,17 +9,17 @@ export const apiClient = async <T>(
   options: RequestOptions = {}
 ): Promise<T> => {
   const { body, headers, ...rest } = options;
-
+  const isFormData = body instanceof FormData;
   const token = localStorage.getItem('token');
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: options.method || 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     ...rest,
   });
 

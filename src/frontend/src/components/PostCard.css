@@ -1,0 +1,40 @@
+.post-card {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f5deb3;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  color: #000;
+  font-family: Arial, sans-serif;
+  text-decoration: none;
+}
+
+.post-card:focus-visible {
+  outline: 2px solid #713f12;
+  outline-offset: 2px;
+}
+
+.post-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-card-title {
+  overflow: hidden;
+  margin: 0 0 0.5rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-card-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+}

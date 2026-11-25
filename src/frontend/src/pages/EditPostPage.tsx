@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from '../components/Layout';
 import { getPostById, updatePost } from '../api/posts';
 import RichTextEditor from '../components/RichTextEditor';
+import DistrictPicker from '../components/DistrictPicker';
 import { uploadImageToCloudinary } from '../utils/uploadImageToCloudinary';
+import { getTravelMapPath } from '../utils/travelMap';
 import './PostEditorPage.css';
 
 const categories = ['旅遊', '日記', '閒聊'];
@@ -13,6 +15,7 @@ const EditPostPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
 
@@ -21,6 +24,7 @@ const EditPostPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState(categories[0]);
+  const [districtIds, setDistrictIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.role === 'admin';
@@ -35,6 +39,7 @@ const EditPostPage: React.FC = () => {
         setTitle(post.title);
         setContent(post.content);
         setCategory(post.category || categories[0]);
+        setDistrictIds(post.districtIds ?? []);
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -47,10 +52,7 @@ const EditPostPage: React.FC = () => {
   }, [id, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('文章內容:', content);
     e.preventDefault();
-
-    
 
     if (!isAdmin) {
       alert('你沒有權限修改文章');
@@ -62,6 +64,7 @@ const EditPostPage: React.FC = () => {
         title,
         content,
         category,
+        districtIds,
       });
 
       if (setPosts) {
@@ -71,7 +74,9 @@ const EditPostPage: React.FC = () => {
       }
 
       alert('文章修改成功');
-      navigate(`/post/${id}`);
+      navigate(searchParams.get('from') === 'map'
+        ? getTravelMapPath(searchParams.get('district'))
+        : `/post/${id}`);
     } catch (err: any) {
       console.error(err);
       alert(err.message || '修改文章失敗');
@@ -106,6 +111,7 @@ const EditPostPage: React.FC = () => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        <DistrictPicker value={districtIds} onChange={setDistrictIds} />
         <label>內容</label>
         <RichTextEditor
           value={content}

@@ -1,6 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { Post } from '../types/post';
+import './PostCard.css';
+
 export type { Post } from '../types/post';
 
 interface PostCardProps {
@@ -13,48 +14,15 @@ function stripHtml(html: string) {
 }
 
 
-const PostCard: React.FC<PostCardProps> = ({ post, maxContentLines = 3 }) => {
-  const navigate = useNavigate();
-
+export default function PostCard({ post, maxContentLines = 3 }: PostCardProps) {
   return (
-    <div
-      style={styles.card}
-      onClick={() => navigate(`/post/${post.id}`)}
-    >
-      <h2 style={styles.title}>{post.title}</h2>
-      <p style={{ ...styles.content, WebkitLineClamp: maxContentLines }}>
-        {stripHtml(post.content)}
-      </p>
-    </div>
+    <Link className="post-card" to={`/post/${post.id}`} aria-label={post.title}>
+      <div className="post-card-text">
+        <h2 className="post-card-title">{post.title}</h2>
+        <p className="post-card-preview" style={{ WebkitLineClamp: maxContentLines }}>
+          {stripHtml(post.content)}
+        </p>
+      </div>
+    </Link>
   );
-};
-
-const styles = {
-  card: {
-    backgroundColor: '#F5DEB3',
-    padding: '1rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-    marginBottom: '1rem',
-    minWidth: 0,
-    overflow: 'hidden',
-    color: 'black',
-    cursor: 'pointer',
-  },
-  title: {
-    display: 'block',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-    margin: '0 0 0.5rem 0',
-  },
-  content: {
-    display: '-webkit-box',
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    margin: 0,
-  },
-} as const;
-
-export default PostCard;
+}

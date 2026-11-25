@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PostsContext } from '../components/Layout';
 import { createPost } from '../api/posts';
 import RichTextEditor from '../components/RichTextEditor';
+import DistrictPicker from '../components/DistrictPicker';
 import { uploadImageToCloudinary } from '../utils/uploadImageToCloudinary';
+import { getTravelMapPath } from '../utils/travelMap';
 import './PostEditorPage.css';
 
 const categories = ['旅遊', '日記', '閒聊'];
@@ -12,6 +14,7 @@ const categories = ['旅遊', '日記', '閒聊'];
 const NewPostPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const context = useContext(PostsContext);
   if (!context) throw new Error('PostsContext 未提供');
 
@@ -20,6 +23,9 @@ const NewPostPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState(categories[0]);
+  const fromMap = searchParams.get('from') === 'map';
+  const mapDistrict = fromMap ? searchParams.get('district') : null;
+  const [districtIds, setDistrictIds] = useState<string[]>(() => mapDistrict ? [mapDistrict] : []);
 
   const isAdmin = user?.role === 'admin';
 
@@ -36,12 +42,13 @@ const NewPostPage: React.FC = () => {
         title,
         content,
         category,
+        districtIds,
       });
 
-      setPosts(prev => [...prev, newPost]);
+      setPosts(prev => [...prev.filter((post) => post.id !== newPost.id), newPost]);
 
       alert('文章新增成功！');
-      navigate('/');
+      navigate(fromMap ? getTravelMapPath(mapDistrict ?? districtIds[0] ?? null) : '/');
     } catch (err) {
       alert('新增文章失敗');
       console.error(err);
@@ -74,6 +81,7 @@ const NewPostPage: React.FC = () => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        <DistrictPicker value={districtIds} onChange={setDistrictIds} />
         <label>內容</label>
         <RichTextEditor
           value={content}

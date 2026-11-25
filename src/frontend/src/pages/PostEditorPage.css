@@ -48,6 +48,51 @@
   padding: 2rem;
 }
 
+.post-district-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid #d7d1c7;
+  border-radius: 8px;
+}
+
+.post-district-picker legend {
+  padding: 0 0.35rem;
+}
+
+.post-district-selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.post-district-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-district-tags button,
+.post-district-status button {
+  border: 1px solid #c3d6ca;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  color: #244437;
+  background: #edf5ef;
+  font: inherit;
+  cursor: pointer;
+}
+
+.post-district-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0;
+}
+
 @media (min-width: 1180px) {
   .post-editor-page {
     padding-bottom: 2rem;

@@ -1,18 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import PostList from '../../pages/PostList';
 import type { Post } from '../../types/post';
-
-// mock useNavigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<any>('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
 
 const posts: Post[] = [
   { id: 1, title: '文章1', content: '內容1', category: '旅遊', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', likeCount: 0 },
@@ -20,10 +10,6 @@ const posts: Post[] = [
 ];
 
 describe('PostList', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
-
   it('renders the correct number of PostCard', () => {
     render(
       <MemoryRouter>
@@ -47,11 +33,14 @@ describe('PostList', () => {
   it('clicking a PostCard navigates to post detail', () => {
     render(
       <MemoryRouter>
-        <PostList posts={posts} />
+        <Routes>
+          <Route path="/" element={<PostList posts={posts} />} />
+          <Route path="/post/1" element={<h1>文章詳情</h1>} />
+        </Routes>
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText('文章1'));
-    expect(mockNavigate).toHaveBeenCalledWith('/post/1');
+    fireEvent.click(screen.getByRole('link', { name: '文章1' }));
+    expect(screen.getByRole('heading', { name: '文章詳情' })).toBeInTheDocument();
   });
 });

@@ -98,6 +98,12 @@ JSON_BODY_LIMIT=1mb
 
 When `NODE_ENV=production`, the backend also requires `CORS_ORIGIN` or `FRONTEND_ORIGIN`, `DATABASE_URL` or `DB_PATH`, and the Cloudinary credentials.
 
+### Travel map records
+
+District descriptions and photo references use a separate database. By default the backend creates `district-visits.sqlite` in its working directory. Set `DISTRICT_VISITS_DB_PATH` to place it on a persistent volume, or set `DISTRICT_VISITS_DATABASE_URL` to use a separate PostgreSQL database. `DISTRICT_VISITS_PGSSLMODE` optionally overrides `PGSSLMODE` for the map database.
+
+Photos use Cloudinary. The map continues to show links to posts tagged with each district using the blog's existing database.
+
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used by `seed.js` to create a local admin account.
 
 The backend also supports these runtime environment variables:

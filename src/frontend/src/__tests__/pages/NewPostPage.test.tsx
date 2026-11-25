@@ -5,8 +5,17 @@ import { PostsContext } from '../../components/Layout';
 import { createMockPostsContext } from '../test-utils/createMockPostsContext';
 
 const mockNavigate = vi.fn();
+const mockUseSearchParams = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  useSearchParams: () => mockUseSearchParams(),
+}));
+
+vi.mock('../../api/districts', () => ({
+  getDistricts: vi.fn().mockResolvedValue([
+    { id: 'taichung-tanzi', county: '臺中市', name: '潭子區' },
+    { id: 'taichung-beitun', county: '臺中市', name: '北屯區' },
+  ]),
 }));
 
 const mockUseAuth = vi.fn();
@@ -39,6 +48,7 @@ describe('NewPostPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
   });
 
   it('非 admin 顯示沒有權限訊息', () => {
@@ -130,6 +140,34 @@ describe('NewPostPage', () => {
 
     await waitFor(() => {
       expect(window.alert).toHaveBeenCalledWith('新增文章失敗');
+    });
+  });
+
+  it('由地圖新增文章時預填行政區並允許加入其他行政區', async () => {
+    mockUseSearchParams.mockReturnValue([new URLSearchParams('from=map&district=taichung-tanzi')]);
+    mockUseAuth.mockReturnValue({ user: { role: 'admin' } });
+    mockCreatePost.mockResolvedValue({ id: 1, title: '旅行文章' });
+    window.alert = vi.fn();
+
+    render(
+      <PostsContext.Provider value={mockContextValue}>
+        <NewPostPage />
+      </PostsContext.Provider>
+    );
+
+    expect(await screen.findByRole('button', { name: '移除 臺中市潭子區' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('標記縣市'), { target: { value: '臺中市' } });
+    fireEvent.change(screen.getByLabelText('加入行政區'), { target: { value: 'taichung-beitun' } });
+    fireEvent.change(screen.getByPlaceholderText('輸入文章標題'), { target: { value: '旅行文章' } });
+    fireEvent.change(screen.getByTestId('rich-text-editor'), { target: { value: '旅途內容' } });
+    fireEvent.click(screen.getByRole('button', { name: '送出' }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/map?district=taichung-tanzi'));
+    expect(mockCreatePost).toHaveBeenCalledWith({
+      title: '旅行文章',
+      content: '旅途內容',
+      category: '旅遊',
+      districtIds: ['taichung-tanzi', 'taichung-beitun'],
     });
   });
 });

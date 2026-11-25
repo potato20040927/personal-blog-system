@@ -33,6 +33,10 @@ vi.mock('../../api/posts', () => {
   };
 });
 
+vi.mock('../../api/districts', () => ({
+  getDistricts: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('../../components/RichTextEditor', () => ({
   default: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
     <textarea
